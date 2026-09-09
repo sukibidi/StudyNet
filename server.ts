@@ -1,6 +1,5 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
@@ -26,12 +25,10 @@ export function createApp() {
 
   app.use(express.json());
 
-  // API Health
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // AI-Net Interactive Query
   app.post("/api/chat", async (req, res) => {
     const { prompt, topic } = req.body;
     if (!prompt) {
@@ -79,7 +76,6 @@ Provide responses structured with clear headings, bullet points, technical telem
     });
   });
 
-  // AI Cognitive Memory & Expertise Analysis
   app.post("/api/analyze-expertise", async (req, res) => {
     const { subjects } = req.body;
     if (!subjects || !Array.isArray(subjects) || subjects.length === 0) {
@@ -180,7 +176,6 @@ Return only valid JSON.`;
     });
   });
 
-  // Deep AI Analysis for Individual Subject in Slide Vault
   app.post("/api/analyze-vault-subject", async (req, res) => {
     const { subject } = req.body;
     if (!subject || !subject.name) {
@@ -300,11 +295,21 @@ export async function startServer() {
   const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
+    let vite;
+    try {
+      const mod = await import("vite");
+      vite = mod.createServer;
+    } catch {
+      vite = null;
+    }
+
+    if (vite) {
+      const viteServer = await vite({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(viteServer.middlewares);
+    }
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
