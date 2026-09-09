@@ -1,5 +1,7 @@
 # StudyNet
 
+![StudyNet Banner](public/banner.svg)
+
 Operator-style study dashboard built with React 19, Vite, TypeScript, Tailwind CSS v4, Supabase, and Express.
 
 ## Screens
