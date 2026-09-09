@@ -21,9 +21,8 @@ function getGenAI(): GoogleGenAI | null {
   return aiClient;
 }
 
-async function startServer() {
+export function createApp() {
   const app = express();
-  const PORT = 3000;
 
   app.use(express.json());
 
@@ -58,13 +57,11 @@ Provide responses structured with clear headings, bullet points, technical telem
         });
       } catch (err: any) {
         console.error("Gemini query error:", err?.message);
-        // Fall back gracefully below
       }
     }
 
-    // Fallback response simulating grounded AI-Net if API key not present
     return res.json({
-      reply: `Multi-level paging replaces a single monolithic flat page table with a hierarchical tree structure. The master outer page table points to subsequent second-level tables, resolving sparse memory allocation without having to allocate memory for unused virtual address regions.\n\nUnallocated memory blocks don’t require second-level tables to exist in RAM. Only the active root directory and explicitly mapped tables consume physical memory frames.`,
+      reply: `Multi-level paging replaces a single monolithic flat page table with a hierarchical tree structure. The master outer page table points to subsequent second-level tables, resolving sparse memory allocation without having to allocate memory for unused virtual address regions.\n\nUnallocated memory blocks don't require second-level tables to exist in RAM. Only the active root directory and explicitly mapped tables consume physical memory frames.`,
       source: "cached-index",
       breakdown: {
         outerBits: "10 bits",
@@ -130,11 +127,9 @@ Return only valid JSON.`;
         }
       } catch (err: any) {
         console.error("Gemini expertise analysis error:", err?.message);
-        // Fall back gracefully below
       }
     }
 
-    // Deterministic tactical fallback computation
     const gradeProfMap: Record<string, number> = {
       'A+': 98, 'A': 92, 'A-': 86, 'B+': 80, 'B': 74, 'B-': 68, 'C+': 62, 'C': 55, 'D': 45, 'F': 25
     };
@@ -235,7 +230,6 @@ Return only valid JSON.`;
       }
     }
 
-    // Deterministic tactical fallback
     const gradeProfMap: Record<string, number> = {
       'A+': 98, 'A': 92, 'A-': 86, 'B+': 80, 'B': 74, 'B-': 68, 'C+': 62, 'C': 55, 'D': 45, 'F': 25
     };
@@ -298,7 +292,13 @@ Return only valid JSON.`;
     });
   });
 
-  // Vite Middleware for development
+  return app;
+}
+
+export async function startServer() {
+  const app = createApp();
+  const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -318,4 +318,6 @@ Return only valid JSON.`;
   });
 }
 
-startServer();
+if (process.env.NODE_ENV !== "production") {
+  startServer();
+}
