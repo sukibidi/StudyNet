@@ -1,0 +1,6 @@
+{
+  "name": "StudyNet - Minimalist Cyber-Tactical HUD",
+  "description": "A high-utility academic performance HUD and cognitive telemetry system for university students, featuring exam countdowns, RPG-style cognitive attribute radar, spaced repetition decks, and AI-Net grounded intelligence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

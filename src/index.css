@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --surface-ground: #0a0e14;
+    --surface-container: #10141a;
+    --surface-container-high: #161b22;
+    --surface-container-highest: #1c222b;
+    --surface-well: #0d1117;
+    --border-subtle: rgba(255, 255, 255, 0.07);
+    --border-active: rgba(255, 51, 68, 0.35);
+    --crimson-core: #ff3344;
+    --crimson-hover: #e62637;
+    --crimson-muted: rgba(255, 51, 68, 0.12);
+    --status-green: #00e599;
+    --status-amber: #f59e0b;
+    --status-cyan: #00d2ff;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #0a0e14;
+    color: #ffffff;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0a0e14;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #21262d;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #30363d;
+  }
+}
+
+.font-heading {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.font-mono-code {
+  font-family: 'Space Mono', 'JetBrains Mono', monospace;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Radar chart pulse & tactical effects */
+@keyframes crimson-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 51, 68, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(255, 51, 68, 0.55);
+  }
+}
+
+/* Skeleton shimmer effects */
+@keyframes cyber-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #161b22 0%,
+    #21262d 50%,
+    #161b22 100%
+  );
+  background-size: 200% 100%;
+  animation: cyber-shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton-shimmer-subtle {
+  background: linear-gradient(
+    90deg,
+    #0d1117 0%,
+    #161b22 50%,
+    #0d1117 100%
+  );
+  background-size: 200% 100%;
+  animation: cyber-shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton-shimmer-crimson {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 51, 68, 0.06) 0%,
+    rgba(255, 51, 68, 0.18) 50%,
+    rgba(255, 51, 68, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: cyber-shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton-shimmer-emerald {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 229, 153, 0.06) 0%,
+    rgba(0, 229, 153, 0.18) 50%,
+    rgba(0, 229, 153, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: cyber-shimmer 1.6s ease-in-out infinite;
+}
+
+.glow-crimson {
+  box-shadow: 0 0 20px rgba(255, 51, 68, 0.25);
+}
+
+.glow-crimson-subtle {
+  box-shadow: 0 0 12px rgba(255, 51, 68, 0.15);
+}
+
+/* Toast progress bar */
+@keyframes progress-bar-shrink {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.animate-progressBar {
+  animation: progress-bar-shrink linear forwards;
+}
