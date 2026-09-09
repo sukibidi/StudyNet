@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { DRILL_QUESTIONS } from '../data';
-import { ScreenType } from '../types';
+import { DrillQuestion, ScreenType } from '../types';
+import { loadDrillQuestionsFromSupabase, saveDrillQuestionToSupabase } from '../data';
 
 interface DrillScreenProps {
   onNavigate: (screen: ScreenType) => void;
@@ -9,13 +9,40 @@ interface DrillScreenProps {
 }
 
 export const DrillScreen: React.FC<DrillScreenProps> = ({ onNavigate, onFinish, operatorName }) => {
+  const [questions, setQuestions] = useState<DrillQuestion[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadQuestions() {
+      try {
+        const qs = await loadDrillQuestionsFromSupabase();
+        if (!cancelled) {
+          setQuestions(qs);
+        }
+      } catch (e) {
+        console.error('Failed to load drill questions from Supabase:', e);
+        if (!cancelled) {
+          try {
+            const saved = localStorage.getItem('studynet_drill_questions');
+            if (saved) setQuestions(JSON.parse(saved));
+          } catch (e2) {}
+        }
+      } finally {
+        if (!cancelled) setIsLoadingQuestions(false);
+      }
+    }
+    loadQuestions();
+    return () => { cancelled = true; };
+  }, []);
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState('opt-a');
   const [isFlagged, setIsFlagged] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(85);
   const [completedNotification, setCompletedNotification] = useState<string | null>(null);
 
-  const question = DRILL_QUESTIONS[currentQuestionIndex] || DRILL_QUESTIONS[0];
+  const question = questions[currentQuestionIndex] || questions[0];
 
   // Countdown timer
   useEffect(() => {
@@ -32,9 +59,9 @@ export const DrillScreen: React.FC<DrillScreenProps> = ({ onNavigate, onFinish, 
   };
 
   const handleSubmit = () => {
-    if (currentQuestionIndex < DRILL_QUESTIONS.length - 1) {
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
-      setSelectedOptionId(DRILL_QUESTIONS[currentQuestionIndex + 1].options[0].id);
+      setSelectedOptionId(questions[currentQuestionIndex + 1].options[0].id);
     } else {
       setCompletedNotification(`Protocol Completed! +120 XP added to ${operatorName || 'Operator'} profile.`);
       setTimeout(() => {

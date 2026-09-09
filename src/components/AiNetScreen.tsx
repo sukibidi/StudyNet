@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ChatMessage, ScreenType, SubjectTaken } from '../types';
-import { INITIAL_SUBJECTS_TAKEN, deriveAreaOfExpertise } from '../expertiseData';
+import { deriveAreaOfExpertise } from '../expertiseData';
 import { MemoryExpertiseGraph } from './MemoryExpertiseGraph';
 import { SubjectSlideVault } from './SubjectSlideVault';
 import { SubjectGradeModal } from './SubjectGradeModal';
 import { playTacticalChirp } from '../utils/audio';
+import { loadSubjectsFromSupabase, saveSubjectToSupabase } from '../expertiseData';
 
 interface AiNetScreenProps {
   onNavigate: (screen: ScreenType) => void;
@@ -20,14 +21,33 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
   // Sub-Navigation: Subject Slide Vault vs Memory Radar vs Neural Copilot
   const [activeTab, setActiveTab] = useState<'VAULT' | 'RADAR' | 'CHAT'>('VAULT');
 
-  // Subjects & Grades State (Default includes Multimedia A+)
-  const [subjects, setSubjects] = useState<SubjectTaken[]>(() => {
-    try {
-      const saved = localStorage.getItem('studynet_subjects_taken');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return INITIAL_SUBJECTS_TAKEN;
-  });
+  // Subjects & Grades State
+  const [subjects, setSubjects] = useState<SubjectTaken[]>([]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSubjects() {
+      try {
+        const data = await loadSubjectsFromSupabase();
+        if (!cancelled) {
+          setSubjects(data);
+        }
+      } catch (e) {
+        console.error('Failed to load subjects from Supabase:', e);
+        if (!cancelled) {
+          try {
+            const saved = localStorage.getItem('studynet_subjects_taken');
+            if (saved) setSubjects(JSON.parse(saved));
+          } catch (e2) {}
+        }
+      } finally {
+        if (!cancelled) setIsLoadingSubjects(false);
+      }
+    }
+    loadSubjects();
+    return () => { cancelled = true; };
+  }, []);
 
   // Modal states
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
@@ -53,7 +73,7 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
       id: 'msg-2',
       sender: 'ai-net',
       timestamp: '09:41 AM',
-      references: 'Page 14 & 18 • View Reference',
+      messageReferences: 'Page 14 & 18 • View Reference',
       text: `Multi-level paging replaces a single monolithic flat page table with a hierarchical tree structure. The master outer page table points to subsequent second-level tables, resolving sparse memory allocation without having to allocate memory for unused virtual address regions.\n\nUnallocated memory blocks don’t require second-level tables to exist in RAM. Only the active root directory and explicitly mapped tables consume physical memory frames.`,
       breakdown: {
         outerBits: '10 bits',
@@ -84,7 +104,7 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
   };
 
   // Subject Management Handlers
-  const handleSaveSubject = (newOrUpdated: SubjectTaken) => {
+  const handleSaveSubject = async (newOrUpdated: SubjectTaken) => {
     setSubjects((prev) => {
       const exists = prev.some((s) => s.id === newOrUpdated.id);
       if (exists) {
@@ -92,20 +112,24 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
       }
       return [newOrUpdated, ...prev];
     });
+    saveSubjectToSupabase(newOrUpdated);
     playTacticalChirp(880, 0.08);
     showToast(
       `Calibrated ${newOrUpdated.name} (${newOrUpdated.grade}) into Memory & Expertise Radar!`
     );
   };
 
-  const handleDeleteSubject = (id: string) => {
+  const handleDeleteSubject = async (id: string) => {
     setSubjects((prev) => prev.filter((s) => s.id !== id));
+    const { deleteSubject } = await import('../lib/api');
+    deleteSubject(id);
     playTacticalChirp(440, 0.06);
     showToast('Subject removed from cognitive spectrum.');
   };
 
-  const handleUpdateSubject = (updated: SubjectTaken) => {
+  const handleUpdateSubject = async (updated: SubjectTaken) => {
     setSubjects((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    saveSubjectToSupabase(updated);
     showToast(`Calibrated AI telemetry for ${updated.code || updated.name}!`);
   };
 
@@ -184,7 +208,7 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
         sender: 'ai-net',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         text: data.reply || 'Analysis completed with verified memory telemetry.',
-        references: isZeroData ? 'General Telemetry Grounding' : 'Page 22 & 27 • Grounded Excerpt',
+        messageReferences: isZeroData ? 'General Telemetry Grounding' : 'Page 22 & 27 • Grounded Excerpt',
         breakdown: data.breakdown || {
           outerBits: '10 bits',
           innerBits: '10 bits',
@@ -487,13 +511,13 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
                         </span>
                       </div>
 
-                      {msg.references && (
+                      {msg.messageReferences && (
                         <button
-                          onClick={() => showToast(`Opening reference: ${msg.references}`)}
+                          onClick={() => showToast(`Opening reference: ${msg.messageReferences}`)}
                           className="flex items-center gap-1.5 px-2.5 py-1 bg-[#161b22] hover:bg-[#1c222b] border border-[#ff3344]/30 rounded-lg text-[10px] font-mono-code text-[#ff5c6c] transition-colors"
                         >
                           <span className="material-symbols-outlined text-xs">menu_book</span>
-                          <span>{msg.references}</span>
+                          <span>{msg.messageReferences}</span>
                         </button>
                       )}
                     </div>

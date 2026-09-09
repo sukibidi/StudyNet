@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DaySchedule, ScheduleItem, ScreenType } from '../types';
-import { INITIAL_SCHEDULE_DAYS } from '../data';
+import { loadScheduleDaysFromSupabase, saveScheduleDayWithItems } from '../data';
 import { TimetableInputModal } from './TimetableInputModal';
 
 interface SchedScreenProps {
@@ -20,13 +20,34 @@ export const SchedScreen: React.FC<SchedScreenProps> = ({
   onAddSession: externalAddSession,
   onOpenTimetableModal,
 }) => {
-  const [internalScheduleDays, setInternalScheduleDays] = useState<DaySchedule[]>(() => {
-    try {
-      const saved = localStorage.getItem('studynet_schedule_days');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return INITIAL_SCHEDULE_DAYS;
-  });
+  const [internalScheduleDays, setInternalScheduleDays] = useState<DaySchedule[]>([]);
+  const [isLoadingSchedule, setIsLoadingSchedule] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSchedule() {
+      try {
+        const days = await loadScheduleDaysFromSupabase();
+        if (!cancelled) {
+          setInternalScheduleDays(days);
+        }
+      } catch (e) {
+        console.error('Failed to load schedule from Supabase:', e);
+        if (!cancelled) {
+          try {
+            const saved = localStorage.getItem('studynet_schedule_days');
+            if (saved) setInternalScheduleDays(JSON.parse(saved));
+          } catch (e2) {}
+        }
+      } finally {
+        if (!cancelled) setIsLoadingSchedule(false);
+      }
+    }
+    if (!externalScheduleDays) {
+      loadSchedule();
+    }
+    return () => { cancelled = true; };
+  }, [externalScheduleDays]);
 
   const [isLocalTimetableModalOpen, setIsLocalTimetableModalOpen] = useState(false);
   const [selectedDayNumber, setSelectedDayNumber] = useState(23);
@@ -39,7 +60,7 @@ export const SchedScreen: React.FC<SchedScreenProps> = ({
     setTimeout(() => setScheduleToast(null), 2500);
   };
 
-  const handleAddSession = (dayNumber: number, session: ScheduleItem) => {
+  const handleAddSession = async (dayNumber: number, session: ScheduleItem) => {
     if (externalAddSession) {
       externalAddSession(dayNumber, session);
     } else {
@@ -57,6 +78,7 @@ export const SchedScreen: React.FC<SchedScreenProps> = ({
           }
           return day;
         });
+        saveScheduleDayWithItems(updated.find((d) => d.dateNumber === dayNumber)!);
         try {
           localStorage.setItem('studynet_schedule_days', JSON.stringify(updated));
         } catch (e) {}

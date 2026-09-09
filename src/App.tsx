@@ -12,55 +12,111 @@ import { EditProfileModal } from './components/EditProfileModal';
 import { LoadingSkeleton } from './components/LoadingSkeleton';
 import { TacticalToastManager } from './components/TacticalToastManager';
 import { TacticalAlertCenterModal } from './components/TacticalAlertCenterModal';
-import { OPERATOR_PROFILE, INITIAL_SCHEDULE_DAYS, isProfileZeroData } from './data';
-import { INITIAL_TACTICAL_ALERTS, isWithin24Hours } from './alertsData';
+import { OPERATOR_PROFILE, isProfileZeroData, loadScheduleDaysFromSupabase, saveScheduleDayWithItems } from './data';
+import { isWithin24Hours, loadAlertsFromSupabase } from './alertsData';
 import { DaySchedule, OperatorProfile, ScheduleItem, ScreenType, TacticalAlert } from './types';
 import { initAudioSettings, playTacticalChirp } from './utils/audio';
 import { TimetableInputModal } from './components/TimetableInputModal';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('HOME');
-  const [operatorProfile, setOperatorProfile] = useState<OperatorProfile>(() => {
-    try {
-      const saved = localStorage.getItem('studynet_operator_profile');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
-    }
-    return OPERATOR_PROFILE;
-  });
+  const [operatorProfile, setOperatorProfile] = useState<OperatorProfile | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const syncTimerRef = useRef<number | null>(null);
 
+  // Load operator profile from Supabase
+  useEffect(() => {
+    let cancelled = false;
+    async function loadProfile() {
+      try {
+        const { getOrCreateProfile } = await import('./lib/api');
+        const profile = await getOrCreateProfile();
+        if (!cancelled) {
+          setOperatorProfile({
+            name: profile.name,
+            email: profile.email,
+            handle: profile.handle,
+            role: profile.role,
+            institution: profile.institution,
+            level: profile.level,
+            xp: profile.xp,
+            xpMax: profile.xp_max,
+            rank: profile.rank,
+            cgpa: profile.cgpa,
+            targetCgpa: profile.target_cgpa,
+            avatarUrl: profile.avatar_url,
+            targetExam: profile.target_exam,
+            focusArea: profile.focus_area,
+            isZeroData: profile.is_zero_data,
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load profile from Supabase, falling back to localStorage', e);
+        try {
+          const saved = localStorage.getItem('studynet_operator_profile');
+          if (saved) {
+            setOperatorProfile(JSON.parse(saved));
+          } else {
+            setOperatorProfile(OPERATOR_PROFILE);
+          }
+        } catch (e2) {
+          setOperatorProfile(OPERATOR_PROFILE);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingProfile(false);
+      }
+    }
+    loadProfile();
+    return () => { cancelled = true; };
+  }, []);
+
   // Derived Zero-Data state directly from active Operator Profile
   const isZeroData = isProfileZeroData(operatorProfile);
 
   // Tactical Alert & Notification State
-  const [alerts, setAlerts] = useState<TacticalAlert[]>(() => {
-    try {
-      const saved = localStorage.getItem('studynet_tactical_alerts');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return INITIAL_TACTICAL_ALERTS;
-  });
+  const [alerts, setAlerts] = useState<TacticalAlert[]>([]);
 
   const [activeToasts, setActiveToasts] = useState<TacticalAlert[]>([]);
   const [isAlertCenterOpen, setIsAlertCenterOpen] = useState(false);
   const toastQueueInitializedRef = useRef(false);
 
   // Timetable Schedule State & Modal
-  const [scheduleDays, setScheduleDays] = useState<DaySchedule[]>(() => {
-    try {
-      const saved = localStorage.getItem('studynet_schedule_days');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return INITIAL_SCHEDULE_DAYS;
-  });
+  const [scheduleDays, setScheduleDays] = useState<DaySchedule[]>([]);
   const [isTimetableModalOpen, setIsTimetableModalOpen] = useState(false);
 
-  const handleAddTimetableSession = (dayNumber: number, session: ScheduleItem) => {
+  // Load initial data from Supabase on mount
+  useEffect(() => {
+    let cancelled = false;
+    async function loadData() {
+      try {
+        const [alertsData, daysData] = await Promise.all([
+          loadAlertsFromSupabase(),
+          loadScheduleDaysFromSupabase(),
+        ]);
+        if (!cancelled) {
+          setAlerts(alertsData);
+          setScheduleDays(daysData);
+        }
+      } catch (e) {
+        console.error('Failed to load data from Supabase:', e);
+        if (!cancelled) {
+          try {
+            const savedAlerts = localStorage.getItem('studynet_tactical_alerts');
+            const savedDays = localStorage.getItem('studynet_schedule_days');
+            if (savedAlerts) setAlerts(JSON.parse(savedAlerts));
+            if (savedDays) setScheduleDays(JSON.parse(savedDays));
+          } catch (e2) {}
+        }
+      }
+    }
+    loadData();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleAddTimetableSession = async (dayNumber: number, session: ScheduleItem) => {
     setScheduleDays((prev) => {
       const updated = prev.map((day) => {
         if (day.dateNumber === dayNumber) {
@@ -75,6 +131,7 @@ export default function App() {
         }
         return day;
       });
+      saveScheduleDayWithItems(updated.find((d) => d.dateNumber === dayNumber)!);
       try {
         localStorage.setItem('studynet_schedule_days', JSON.stringify(updated));
       } catch (e) {}

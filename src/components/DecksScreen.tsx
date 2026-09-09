@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { FLASHCARDS_DECK } from '../data';
-import { ScreenType } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Flashcard, ScreenType } from '../types';
+import { loadFlashcardsFromSupabase, saveFlashcardToSupabase } from '../data';
 
 interface DecksScreenProps {
   onNavigate: (screen: ScreenType) => void;
@@ -8,7 +8,33 @@ interface DecksScreenProps {
 }
 
 export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData = false }) => {
-  const [deck, setDeck] = useState(FLASHCARDS_DECK);
+  const [deck, setDeck] = useState<Flashcard[]>([]);
+  const [isLoadingDeck, setIsLoadingDeck] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadDeck() {
+      try {
+        const cards = await loadFlashcardsFromSupabase();
+        if (!cancelled) {
+          setDeck(cards);
+        }
+      } catch (e) {
+        console.error('Failed to load flashcards from Supabase:', e);
+        if (!cancelled) {
+          try {
+            const saved = localStorage.getItem('studynet_flashcards');
+            if (saved) setDeck(JSON.parse(saved));
+          } catch (e2) {}
+        }
+      } finally {
+        if (!cancelled) setIsLoadingDeck(false);
+      }
+    }
+    loadDeck();
+    return () => { cancelled = true; };
+  }, []);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
   const [reviewCount, setReviewCount] = useState(14);
@@ -17,7 +43,7 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
 
   const currentCard = deck[currentIndex] || deck[0];
 
-  const handleRate = (interval: string) => {
+  const handleRate = async (interval: string) => {
     setFeedbackToast(`Interval scheduled: ${interval}`);
     setTimeout(() => setFeedbackToast(null), 2000);
 
@@ -26,7 +52,6 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
       setCurrentIndex((i) => i + 1);
       setReviewCount((c) => c + 1);
     } else {
-      // Loop back or show completion
       setCurrentIndex(0);
       setReviewCount(14);
     }

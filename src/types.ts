@@ -152,7 +152,7 @@ export interface ChatMessage {
   sender: 'user' | 'ai-net';
   timestamp: string;
   text: string;
-  references?: string;
+  messageReferences?: string;
   breakdown?: {
     outerBits: string;
     innerBits: string;
