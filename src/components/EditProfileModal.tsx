@@ -15,6 +15,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   profile,
   onSave,
 }) => {
+  if (!isOpen || !profile) return null;
+
   const [formData, setFormData] = useState<OperatorProfile>({ ...profile });
   const [customAvatarUrl, setCustomAvatarUrl] = useState(
     DEFAULT_AVATARS.some((a) => a.url === profile.avatarUrl) ? '' : profile.avatarUrl
@@ -22,8 +24,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [showCustomInput, setShowCustomInput] = useState(
     !DEFAULT_AVATARS.some((a) => a.url === profile.avatarUrl)
   );
-
-  if (!isOpen) return null;
 
   const handleSelectAvatar = (url: string) => {
     setFormData((prev) => ({ ...prev, avatarUrl: url }));
