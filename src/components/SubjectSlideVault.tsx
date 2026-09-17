@@ -102,8 +102,8 @@ export const SubjectSlideVault: React.FC<SubjectSlideVaultProps> = ({
     <div className="space-y-4">
       {/* 1. VAULT CONTROLLER & HUD TELEMETRY HEADER */}
       <div className="bg-[#10141a] rounded-2xl p-4 sm:p-5 border border-[rgba(255,255,255,0.07)] space-y-3.5 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
+        <div className="flex flex-col gap-3">
+          <div className="flex min-w-0 items-start gap-2.5">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#ff3344]/15 border border-[#ff3344]/30 flex items-center justify-center text-[#ff3344] shrink-0">
               <span className="material-symbols-outlined text-lg sm:text-xl">view_carousel</span>
             </div>
@@ -117,19 +117,19 @@ export const SubjectSlideVault: React.FC<SubjectSlideVaultProps> = ({
                 </span>
               </div>
               <p className="text-[11px] font-mono-code text-[#8b949e]">
-                Slide between taken subjects, put new courses, and run deep AI cognitive analysis
+                Upload subject documents, review the scan, and build your study vault
               </p>
             </div>
           </div>
 
           {/* Quick Vault Action Buttons */}
-          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
+            <div className="flex w-full items-center gap-2 self-start shrink-0 flex-wrap">
             <button
               onClick={onAddSubject}
               className="py-1.5 px-3 rounded-xl bg-[#ff3344] hover:bg-[#e62637] text-white text-xs font-mono-code font-bold uppercase transition-all shadow-[0_0_10px_rgba(255,51,68,0.25)] flex items-center gap-1.5 active:scale-95"
             >
               <span className="material-symbols-outlined text-xs">add_box</span>
-              <span>+ Put Subject in Vault</span>
+              <span>Upload Subject</span>
             </button>
 
             <button
@@ -185,7 +185,7 @@ export const SubjectSlideVault: React.FC<SubjectSlideVaultProps> = ({
           <div>
             <h3 className="text-sm font-bold font-heading text-white">Subject Vault Empty</h3>
             <p className="text-xs font-mono-code text-[#8b949e] max-w-sm mx-auto mt-1">
-              Put your taken courses and grades (e.g. Multimedia with A+) into the vault for AI cognitive analysis.
+              Upload a subject document and we will scan it for the course name, code, and grade.
             </p>
           </div>
           <button
@@ -193,7 +193,7 @@ export const SubjectSlideVault: React.FC<SubjectSlideVaultProps> = ({
             className="py-2 px-4 rounded-xl bg-[#ff3344] hover:bg-[#e62637] text-white text-xs font-mono-code font-bold uppercase transition-all shadow-[0_0_12px_rgba(255,51,68,0.3)] inline-flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-sm">add_circle</span>
-            <span>+ Put First Subject in Vault</span>
+            <span>Upload First Subject</span>
           </button>
         </div>
       ) : currentSubject ? (

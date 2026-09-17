@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DaySchedule, ScheduleItem } from '../types';
 import { playTacticalChirp } from '../utils/audio';
 
@@ -94,7 +94,7 @@ export const TimetableInputModal: React.FC<TimetableInputModalProps> = ({
   onAddSession,
   scheduleDays,
 }) => {
-  const [selectedDayNumber, setSelectedDayNumber] = useState<number>(23);
+  const [selectedDayNumber, setSelectedDayNumber] = useState<number>(scheduleDays.find((day) => day.isToday)?.dateNumber || scheduleDays[0]?.dateNumber || 0);
   const [selectedCoursePreset, setSelectedCoursePreset] = useState<string>(COURSE_PRESETS[0].name);
   const [title, setTitle] = useState(COURSE_PRESETS[0].name);
   const [courseCode, setCourseCode] = useState(COURSE_PRESETS[0].code);
@@ -115,6 +115,12 @@ export const TimetableInputModal: React.FC<TimetableInputModalProps> = ({
   const [notes, setNotes] = useState(COURSE_PRESETS[0].defaultNotes);
   const [docName, setDocName] = useState(COURSE_PRESETS[0].defaultDoc);
   const [isRequired, setIsRequired] = useState(true);
+
+  useEffect(() => {
+    if (isOpen && scheduleDays.length > 0 && !scheduleDays.some((day) => day.dateNumber === selectedDayNumber)) {
+      setSelectedDayNumber(scheduleDays.find((day) => day.isToday)?.dateNumber || scheduleDays[0].dateNumber);
+    }
+  }, [isOpen, scheduleDays, selectedDayNumber]);
 
   if (!isOpen) return null;
 
@@ -220,10 +226,10 @@ export const TimetableInputModal: React.FC<TimetableInputModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold font-heading text-white tracking-wide uppercase">
-                Input Timetable Schedule
+                Add schedule session
               </h2>
               <p className="text-[11px] font-mono-code text-[#8b949e]">
-                Select session parameters via tactical dropdown menus
+                Choose a day, time, and session type
               </p>
             </div>
           </div>

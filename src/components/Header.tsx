@@ -55,19 +55,19 @@ export const Header: React.FC<HeaderProps> = ({
       case 'HOME':
         return 'OVERVIEW';
       case 'SCHED':
-        return 'TIMETABLE';
+        return 'SCHEDULE';
       case 'AI-NET':
         return 'AI-NET';
       case 'DECKS':
         return 'DECKS';
       case 'STATS':
-        return 'DOSSIER';
+        return 'PROGRESS';
       case 'DRILL':
-        return 'EXAM DRILL';
+        return 'PRACTICE';
       case 'LOGIN':
-        return 'GATEWAY';
+        return 'SIGN IN';
       default:
-        return 'HUD';
+        return 'STUDYNET';
     }
   };
 

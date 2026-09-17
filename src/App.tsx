@@ -25,6 +25,7 @@ export default function App() {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFallbackMode, setIsFallbackMode] = useState(false);
   const syncTimerRef = useRef<number | null>(null);
 
   // Load operator profile from Supabase
@@ -35,6 +36,7 @@ export default function App() {
         const { getOrCreateProfile } = await import('./lib/api');
         const profile = await getOrCreateProfile();
         if (!cancelled) {
+          setIsFallbackMode(false);
           setOperatorProfile({
             name: profile.name,
             email: profile.email,
@@ -54,6 +56,7 @@ export default function App() {
           });
         }
       } catch (e) {
+        setIsFallbackMode(true);
         console.error('Failed to load profile from Supabase, falling back to localStorage', e);
         try {
           const saved = localStorage.getItem('studynet_operator_profile');
@@ -101,6 +104,7 @@ export default function App() {
           setScheduleDays(daysData);
         }
       } catch (e) {
+        setIsFallbackMode(true);
         console.error('Failed to load data from Supabase:', e);
         if (!cancelled) {
           try {
@@ -283,6 +287,12 @@ export default function App() {
         alertCount24h={alertCount24h}
         onOpenAlertCenter={() => setIsAlertCenterOpen(true)}
       />
+
+      {isFallbackMode && (
+        <div className="fixed top-14 inset-x-0 z-40 border-b border-[#f59e0b]/40 bg-[#3a2a0a]/95 px-4 py-2 text-center text-[11px] font-mono-code text-[#fbbf24] backdrop-blur">
+          Offline mode: changes are saved on this device and may not sync until the connection returns.
+        </div>
+      )}
 
       {/* Floating Tactical Toast Manager */}
       {!isZeroData && (

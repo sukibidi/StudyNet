@@ -53,6 +53,7 @@ export const SubjectGradeModal: React.FC<SubjectGradeModalProps> = ({
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -71,24 +72,28 @@ export const SubjectGradeModal: React.FC<SubjectGradeModalProps> = ({
   const handleFile = async (file?: File) => {
     if (!file) return;
 
-    const acceptedExtensions = ['.pdf', '.doc', '.docx', '.csv', '.txt', '.png', '.jpg', '.jpeg'];
+    const acceptedExtensions = ['.pdf', '.docx', '.pptx', '.csv', '.txt', '.png', '.jpg', '.jpeg'];
     const lowerName = file.name.toLowerCase();
     if (!acceptedExtensions.some((extension) => lowerName.endsWith(extension))) {
-      setUploadMessage('Use a PDF, Word document, CSV, TXT, PNG, or JPG file.');
+      setUploadMessage('Upload a PDF, DOCX, PPTX, image, TXT, or CSV file.');
       return;
     }
 
     setUploadedFileName(file.name);
-    setUploadMessage('Scanning document with OCR...');
+    setIsProcessingFile(true);
+    setUploadMessage(/\.(docx|pptx)$/i.test(file.name) ? 'Reading document structure...' : 'Reading document...');
 
     let detectedText = file.name;
     try {
       const { extractDocumentText } = await import('../utils/documentOcr');
       detectedText += ` ${await extractDocumentText(file)}`;
     } catch (error) {
-      setUploadMessage(error instanceof Error ? error.message : 'Could not scan this document.');
+      setUploadMessage(`${error instanceof Error ? error.message : 'Could not scan this document.'} Drop another file or enter the details manually below.`);
+      setIsProcessingFile(false);
       return;
     }
+
+    setUploadMessage('Analyzing detected subject details...');
 
     const detectedGrade = detectedText.match(/(?:^|[\s_\-])(A\+|A-|A|B\+|B-|B|C\+|C|D|F)(?=$|[\s_\-.,])/i)?.[1]?.toUpperCase() as GradeLetter | undefined;
     if (detectedGrade && AVAILABLE_GRADES.includes(detectedGrade)) {
@@ -109,6 +114,7 @@ export const SubjectGradeModal: React.FC<SubjectGradeModalProps> = ({
     }
 
     setUploadMessage('OCR complete. Review the detected details before saving.');
+    setIsProcessingFile(false);
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -163,10 +169,10 @@ export const SubjectGradeModal: React.FC<SubjectGradeModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold font-heading text-white tracking-wide uppercase">
-                {editingSubject ? 'Edit Subject & Grade' : 'Input Subject & Grade'}
+                {editingSubject ? 'Edit Subject' : 'Add Subject Document'}
               </h2>
               <p className="text-[11px] font-mono-code text-[#8b949e]">
-                AI will calibrate expertise domain &amp; memory retention vectors
+                Upload a document and we will read the subject details
               </p>
             </div>
           </div>
@@ -230,20 +236,20 @@ export const SubjectGradeModal: React.FC<SubjectGradeModalProps> = ({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.doc,.docx,.csv,.txt,.png,.jpg,.jpeg"
+                accept=".pdf,.docx,.pptx,.csv,.txt,.png,.jpg,.jpeg"
                 className="hidden"
                 onChange={(event) => void handleFile(event.target.files?.[0])}
               />
               <span className="material-symbols-outlined text-2xl text-[#ff3344]">upload_file</span>
               <p className="mt-1 text-xs font-bold font-mono-code text-white">
-                {uploadedFileName || 'Drop grade sheet here or browse files'}
+                {uploadedFileName || 'Drop a subject file here or browse'}
               </p>
               <p className="mt-1 text-[10px] font-mono-code text-[#8b949e]">
-                We will prefill the subject, course code, and grade when they are readable.
+                PDF, DOCX, PPTX, image, TXT, or CSV. Subject and grade are detected automatically.
               </p>
             </div>
             {uploadMessage && (
-              <p className="text-[10px] font-mono-code text-[#00e599]">{uploadMessage}</p>
+              <p className={`text-[10px] font-mono-code ${uploadMessage.includes('Could not') || uploadMessage.startsWith('Upload a') ? 'text-[#ff3344]' : 'text-[#00e599]'}`}>{uploadMessage}</p>
             )}
           </div>
 
@@ -280,7 +286,7 @@ export const SubjectGradeModal: React.FC<SubjectGradeModalProps> = ({
           {/* Grade Selector & Academic Term */}
           <div className="space-y-2">
             <label className="text-[11px] font-mono-code text-[#8b949e] font-bold uppercase tracking-wide flex items-center justify-between">
-              <span>Grade Achieved *</span>
+              <span>Grade <span className="font-normal text-[#5c6370]">(review if needed)</span></span>
               <span className="text-[#00e599] font-normal text-[10px]">
                 Grade directly drives AI Expertise &amp; Memory Retention
               </span>
@@ -408,10 +414,11 @@ export const SubjectGradeModal: React.FC<SubjectGradeModalProps> = ({
             </button>
             <button
               type="submit"
+              disabled={isProcessingFile}
               className="px-5 py-2 rounded-xl bg-[#ff3344] hover:bg-[#e62637] text-white font-mono-code text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_12px_rgba(255,51,68,0.3)] active:scale-95 flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-sm">save</span>
-              <span>{editingSubject ? 'Update Subject' : 'Save & Calibrate AI'}</span>
+              <span>{isProcessingFile ? 'Reading document...' : editingSubject ? 'Save Changes' : 'Add to Vault'}</span>
             </button>
           </div>
         </form>

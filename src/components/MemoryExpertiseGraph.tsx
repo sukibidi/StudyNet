@@ -61,6 +61,9 @@ export const MemoryExpertiseGraph: React.FC<MemoryExpertiseGraphProps> = ({
 
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border border-[#21262d] bg-[#10141a] px-3 py-2.5 text-xs text-[#8b949e]">
+        Progress analysis compares your subject grades, expertise areas, and memory-retention estimates to show what to review next.
+      </div>
       {/* 1. TOP TELEMETRY SUMMARY STRIP */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="bg-[#10141a] rounded-xl p-3 border border-[rgba(255,255,255,0.07)]">
@@ -99,28 +102,28 @@ export const MemoryExpertiseGraph: React.FC<MemoryExpertiseGraphProps> = ({
           </span>
         </div>
 
-        <div className="bg-[#10141a] rounded-xl p-3 border border-[rgba(255,255,255,0.07)] flex flex-col justify-between">
+        <div className="col-span-2 flex flex-col justify-between rounded-xl border border-[rgba(255,255,255,0.07)] bg-[#10141a] p-3">
           <span className="text-[10px] font-mono-code text-[#8b949e] uppercase block">
             Actions
           </span>
-          <div className="flex items-center gap-1.5 mt-1">
+          <div className="mt-1 grid grid-cols-2 gap-1.5">
             <button
               onClick={onAddSubject}
-              className="flex-1 py-1 px-1.5 rounded-lg bg-[#ff3344] hover:bg-[#e62637] text-white font-mono-code text-[10px] font-bold uppercase transition-all shadow-[0_0_8px_rgba(255,51,68,0.3)] text-center"
+              className="min-w-0 rounded-lg bg-[#ff3344] px-1.5 py-1 text-center font-mono-code text-[10px] font-bold uppercase text-white shadow-[0_0_8px_rgba(255,51,68,0.3)] transition-all hover:bg-[#e62637]"
               title="Add Subject & Grade"
             >
-              + Subject
+              Add Subject
             </button>
             <button
               onClick={onRunAiAnalysis}
               disabled={isAnalyzing}
-              className="py-1 px-2 rounded-lg bg-[#161b22] hover:bg-[#21262d] border border-[#ff3344]/40 text-[#ff5c6c] font-mono-code text-[10px] font-bold uppercase transition-all flex items-center gap-1 shrink-0"
+              className="min-w-0 rounded-lg border border-[#ff3344]/40 bg-[#161b22] px-2 py-1 font-mono-code text-[10px] font-bold uppercase text-[#ff5c6c] transition-all hover:bg-[#21262d] flex items-center justify-center gap-1"
               title="Run AI Neural Analysis"
             >
               <span className={`material-symbols-outlined text-xs ${isAnalyzing ? 'animate-spin' : ''}`}>
                 bolt
               </span>
-              <span>AI</span>
+              <span>Analyze</span>
             </button>
           </div>
         </div>
@@ -226,7 +229,7 @@ export const MemoryExpertiseGraph: React.FC<MemoryExpertiseGraphProps> = ({
                 const ly = center + labelDist * Math.sin(angle);
 
                 const isSelected = selectedSubject?.id === subj.id;
-                let textAnchor = 'middle';
+                let textAnchor: 'start' | 'middle' | 'end' = 'middle';
                 if (Math.cos(angle) > 0.3) textAnchor = 'start';
                 else if (Math.cos(angle) < -0.3) textAnchor = 'end';
 

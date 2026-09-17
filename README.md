@@ -85,3 +85,7 @@ This project is configured for a full Netlify deployment. The Vite frontend is p
 The Supabase schema must be applied from `supabase/schema.sql` before using persistent data. `GEMINI_API_KEY` is used only by the Netlify Function and must not be renamed with a `VITE_` prefix, because Vite exposes `VITE_` variables to the browser.
 
 After deployment, verify that the site loads directly on a nested route and that `/api/health` returns a JSON response. AI-Net features use the API routes `/api/chat`, `/api/analyze-expertise`, and `/api/analyze-vault-subject`.
+
+## Guest data boundary
+
+Guest mode is device-local. Uploaded subjects, generated flashcards, and analysis results are kept in browser localStorage and are not treated as a synced account. They remain available after a refresh on the same device, but can be lost when browser storage is cleared or the user changes device. Users who need durable cross-device data should sign in with a profile before saving important study material.

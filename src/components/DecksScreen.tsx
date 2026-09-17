@@ -40,8 +40,24 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
   const [reviewCount, setReviewCount] = useState(14);
   const [streakDays, setStreakDays] = useState(14);
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [deckView, setDeckView] = useState<'ALL' | 'DUE' | 'RECENT'>('ALL');
+  const [manualTopic, setManualTopic] = useState('');
+  const [manualQuestion, setManualQuestion] = useState('');
+  const [manualAnswer, setManualAnswer] = useState('');
 
   const currentCard = deck[currentIndex] || deck[0];
+  const isDeckEmpty = !isLoadingDeck && deck.length === 0;
+  const visibleDeck = deck.filter((card) => {
+    if (deckView === 'DUE') return card.retentionStability < 70;
+    if (deckView === 'RECENT') return card.category === 'AI-NET GENERATED';
+    return true;
+  });
+  const currentVisibleCard = visibleDeck[currentIndex] || visibleDeck[0] || currentCard;
+
+  useEffect(() => {
+    if (visibleDeck.length === 0 || currentIndex >= visibleDeck.length) setCurrentIndex(0);
+  }, [visibleDeck.length, currentIndex]);
 
   const handleRate = async (interval: string) => {
     setFeedbackToast(`Interval scheduled: ${interval}`);
@@ -57,6 +73,54 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
     }
   };
 
+  const handleSaveManualCard = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!manualTopic.trim() || !manualQuestion.trim() || !manualAnswer.trim()) return;
+
+    const card: Flashcard = {
+      id: crypto.randomUUID(),
+      course: 'PERSONAL DECK',
+      cardNumber: deck.length + 1,
+      totalCards: deck.length + 1,
+      topic: manualTopic.trim(),
+      category: 'MANUAL',
+      question: manualQuestion.trim(),
+      keyAspect: 'Recall the answer before revealing it.',
+      comparison: {
+        leftTitle: 'PROMPT',
+        leftValue: 'Active recall',
+        leftSub: 'Try answering from memory first.',
+        rightTitle: 'SOURCE',
+        rightValue: 'Personal',
+        rightSub: 'Added manually to your deck.',
+      },
+      explanation: manualAnswer.trim(),
+      retentionStability: 50,
+    };
+
+    setDeck((previous) => [card, ...previous]);
+    setCurrentIndex(0);
+    setIsAnswerRevealed(false);
+    setIsBuilderOpen(false);
+    setManualTopic('');
+    setManualQuestion('');
+    setManualAnswer('');
+
+    try {
+      await saveFlashcardToSupabase(card);
+    } catch (error) {
+      console.warn('Manual flashcard persistence fallback:', error);
+      try {
+        const savedCards = JSON.parse(localStorage.getItem('studynet_flashcards') || '[]') as Flashcard[];
+        localStorage.setItem('studynet_flashcards', JSON.stringify([card, ...savedCards]));
+      } catch (storageError) {
+        console.warn('Manual flashcard local fallback unavailable:', storageError);
+      }
+    }
+    setFeedbackToast('Card added to your deck');
+    setTimeout(() => setFeedbackToast(null), 2000);
+  };
+
   return (
     <div className="w-full max-w-xl mx-auto px-4 pt-[72px] pb-28 space-y-5 flex flex-col items-stretch">
       {/* 1. CARD TOPIC & RETENTION STATUS */}
@@ -66,7 +130,7 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
       >
         <div className="flex items-center justify-between">
           <span className="text-xs font-mono-code text-[#8b949e] uppercase tracking-wider">
-            {isZeroData ? 'NO ACTIVE DECK LOADED' : currentCard.course}
+            {isDeckEmpty ? 'NO ACTIVE DECK LOADED' : currentVisibleCard?.course || 'FLASHCARD DECK'}
           </span>
           <span
             className={`text-xs font-mono-code px-2.5 py-0.5 rounded-lg font-semibold border ${
@@ -75,12 +139,12 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
                 : 'text-[#ff3344] bg-[#ff3344]/15 border-[#ff3344]/30'
             }`}
           >
-            {isZeroData ? '0 Cards Due' : `Card ${currentCard.cardNumber} of ${currentCard.totalCards}`}
+            {isDeckEmpty ? '0 Cards Due' : `${visibleDeck.length} ${deckView === 'ALL' ? 'Cards' : deckView === 'DUE' ? 'Due' : 'Recent'}`}
           </span>
         </div>
 
         <h2 className="text-lg font-bold font-heading text-white tracking-tight">
-          {isZeroData ? 'Spaced Repetition Queue Clear' : currentCard.topic}
+          {isLoadingDeck ? 'Loading your deck...' : isDeckEmpty ? 'Your flashcard deck is empty' : currentVisibleCard?.topic}
         </h2>
 
         <div className="space-y-2 pt-1">
@@ -90,15 +154,15 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
               <span>Retention Stability</span>
             </div>
             <div>
-              <span className="text-white font-bold">{isZeroData ? '0%' : `${currentCard.retentionStability}%`}</span>
-              <span className="text-[#8b949e]"> • {isZeroData ? 'Standby Queue' : 'High Tier'}</span>
+              <span className="text-white font-bold">{isDeckEmpty ? '0%' : `${currentVisibleCard?.retentionStability || 0}%`}</span>
+              <span className="text-[#8b949e]"> • {isDeckEmpty ? 'Standby Queue' : 'Active Review'}</span>
             </div>
           </div>
 
           {/* Segmented Stability Progress Bar */}
           <div className="grid grid-cols-10 gap-1.5 w-full">
             {Array.from({ length: 10 }).map((_, idx) => {
-              const isFilled = !isZeroData && idx < Math.round(currentCard.retentionStability / 10);
+              const isFilled = !isDeckEmpty && Boolean(currentVisibleCard) && idx < Math.round((currentVisibleCard?.retentionStability || 0) / 10);
               return (
                 <div
                   key={idx}
@@ -112,18 +176,40 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
         </div>
       </div>
 
+      <div className="grid grid-cols-3 gap-1 rounded-xl border border-[#21262d] bg-[#161b22] p-1 font-mono-code">
+        {[
+          ['ALL', 'All Cards'],
+          ['DUE', 'Due for Review'],
+          ['RECENT', 'Recently Generated'],
+        ].map(([view, label]) => (
+          <button
+            key={view}
+            type="button"
+            onClick={() => setDeckView(view as 'ALL' | 'DUE' | 'RECENT')}
+            className={`rounded-lg px-2 py-2 text-[10px] font-bold transition-all ${deckView === view ? 'bg-[#ff3344] text-white' : 'text-[#8b949e] hover:text-white'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* 2. FLASHCARD INTERACTIVE CONTAINER */}
-      {isZeroData ? (
+      {isLoadingDeck ? (
+        <div className="bg-[#10141a] rounded-2xl p-8 border border-[rgba(255,255,255,0.07)] text-center space-y-3 shadow-sm">
+          <span className="material-symbols-outlined text-3xl text-[#ff3344] animate-spin">sync</span>
+          <p className="text-xs font-mono-code text-[#8b949e]">Loading your flashcard deck...</p>
+        </div>
+      ) : isDeckEmpty || visibleDeck.length === 0 ? (
         <div className="bg-[#10141a] rounded-2xl p-6 border border-[rgba(255,255,255,0.07)] text-center space-y-4 shadow-sm">
           <div className="w-12 h-12 mx-auto rounded-xl bg-[#161b22] border border-[#30363d] flex items-center justify-center text-[#8b949e]">
             <span className="material-symbols-outlined text-2xl">style</span>
           </div>
           <div>
             <h3 className="text-sm font-bold font-heading text-white uppercase tracking-wide">
-              NO FLASHCARDS IN QUEUE
+              {isDeckEmpty ? 'NO FLASHCARDS IN DECK' : 'NO CARDS IN THIS VIEW'}
             </h3>
             <p className="text-xs text-[#8b949e] mt-1 max-w-sm mx-auto leading-relaxed">
-              Your spaced repetition queue is clear for today. Generate flashcards directly from indexed lecture documents or add custom problem sets.
+              {isDeckEmpty ? 'Generate cards from AI Chat or add a manual card to begin.' : 'Try another view or generate a new card from AI Chat.'}
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
@@ -135,14 +221,11 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
               <span>Generate Cards with AI-NET</span>
             </button>
             <button
-              onClick={() => {
-                setFeedbackToast('Flashcard builder modal ready');
-                setTimeout(() => setFeedbackToast(null), 2000);
-              }}
+              onClick={() => setIsBuilderOpen(true)}
               className="py-2.5 px-4 bg-[#161b22] hover:bg-[#1f2530] text-white rounded-xl border border-[#30363d] hover:border-[#ff3344] font-mono-code text-xs font-semibold uppercase transition-all inline-flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-sm text-[#ff3344]">add_card</span>
-              <span>+ Add Manual Card</span>
+              <span>Add Manual Card</span>
             </button>
           </div>
         </div>
@@ -154,14 +237,14 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
           >
             <div className="flex items-center justify-between pb-3 border-b border-[#21262d]">
               <div className="flex items-center gap-2 text-xs font-mono-code">
-                <span className="text-white font-bold">QUESTION {currentCard.cardNumber}</span>
+                <span className="text-white font-bold">QUESTION {currentVisibleCard.cardNumber}</span>
                 <span className="text-[#5c6370]">•</span>
-                <span className="text-[#8b949e]">{currentCard.category}</span>
+                <span className="text-[#8b949e]">{currentVisibleCard.category}</span>
               </div>
               <button
                 onClick={() => {
                   setIsAnswerRevealed(false);
-                  setCurrentIndex((idx) => (idx + 1) % deck.length);
+                  setCurrentIndex((idx) => (idx + 1) % visibleDeck.length);
                 }}
                 className="text-[#8b949e] hover:text-white transition-colors"
                 title="Next Question"
@@ -172,7 +255,7 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
 
             {/* Question text */}
             <h3 className="text-base sm:text-lg font-bold font-heading text-white leading-snug">
-              {currentCard.question}
+              {currentVisibleCard.question}
             </h3>
 
             {/* Key aspect hint */}
@@ -181,7 +264,7 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
                 lightbulb
               </span>
               <p className="text-xs text-[#8b949e] leading-relaxed">
-                <strong className="text-white font-medium">Key aspect:</strong> {currentCard.keyAspect}
+                <strong className="text-white font-medium">Key aspect:</strong> {currentVisibleCard.keyAspect}
               </p>
             </div>
 
@@ -203,15 +286,15 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
                   <div className="bg-[#0d1117] p-3.5 rounded-xl border border-[#21262d] space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono-code text-[#8b949e] uppercase">
-                        {currentCard.comparison.leftTitle}
+                        {currentVisibleCard.comparison.leftTitle}
                       </span>
                       <span className="material-symbols-outlined text-[#00d2ff] text-sm">memory</span>
                     </div>
                     <div className="font-heading font-bold text-xs sm:text-sm text-white">
-                      {currentCard.comparison.leftValue}
+                      {currentVisibleCard.comparison.leftValue}
                     </div>
                     <div className="text-[11px] text-[#8b949e]">
-                      {currentCard.comparison.leftSub}
+                      {currentVisibleCard.comparison.leftSub}
                     </div>
                   </div>
 
@@ -219,22 +302,22 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
                   <div className="bg-[#0d1117] p-3.5 rounded-xl border border-[#21262d] space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono-code text-[#8b949e] uppercase">
-                        {currentCard.comparison.rightTitle}
+                        {currentVisibleCard.comparison.rightTitle}
                       </span>
                       <span className="material-symbols-outlined text-[#f59e0b] text-sm">account_tree</span>
                     </div>
                     <div className="font-heading font-bold text-xs sm:text-sm text-white">
-                      {currentCard.comparison.rightValue}
+                      {currentVisibleCard.comparison.rightValue}
                     </div>
                     <div className="text-[11px] text-[#8b949e]">
-                      {currentCard.comparison.rightSub}
+                      {currentVisibleCard.comparison.rightSub}
                     </div>
                   </div>
                 </div>
 
                 {/* Explanation box */}
                 <div className="bg-[#161b22] p-3 rounded-xl border border-[#21262d] text-xs text-[#8b949e] leading-relaxed">
-                  {currentCard.explanation}
+                  {currentVisibleCard.explanation}
                 </div>
               </div>
             )}
@@ -288,17 +371,17 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
       <div className="bg-[#10141a] rounded-xl p-3 border border-[rgba(255,255,255,0.07)] flex items-center justify-between text-xs font-mono-code">
         <div className="flex items-center gap-1.5 text-[#8b949e]">
           <span className="material-symbols-outlined text-sm">layers</span>
-          <span>{isZeroData ? '0 Remaining' : '18 Remaining'}</span>
+          <span>{isDeckEmpty ? '0 Remaining' : `${deck.length} In Deck`}</span>
         </div>
 
         <div className="flex items-center gap-1.5 text-[#8b949e]">
           <span className="material-symbols-outlined text-sm">schedule</span>
-          <span>{isZeroData ? '0 Mins Est.' : '7 Mins Est.'}</span>
+          <span>{isDeckEmpty ? '0 Mins Est.' : `${Math.max(1, deck.length * 2)} Mins Est.`}</span>
         </div>
 
         <div className="flex items-center gap-1.5 text-[#ff3344]">
           <span className="material-symbols-outlined text-sm">local_fire_department</span>
-          <span className="font-bold">{isZeroData ? '0-Day Streak' : `${streakDays}-Day Streak`}</span>
+          <span className="font-bold">{isDeckEmpty ? '0-Day Streak' : `${streakDays}-Day Streak`}</span>
         </div>
       </div>
 
@@ -306,6 +389,29 @@ export const DecksScreen: React.FC<DecksScreenProps> = ({ onNavigate, isZeroData
       {feedbackToast && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-[#161b22] border border-[#ff3344] px-4 py-2 rounded-xl text-xs font-mono-code text-white shadow-2xl animate-fade-in">
           {feedbackToast}
+        </div>
+      )}
+
+      {isBuilderOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <form onSubmit={handleSaveManualCard} className="w-full max-w-lg space-y-4 rounded-2xl border border-[#ff3344]/30 bg-[#10141a] p-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#21262d] pb-3">
+              <div>
+                <h2 className="font-heading text-sm font-bold uppercase text-white">Add Manual Card</h2>
+                <p className="mt-1 text-[11px] font-mono-code text-[#8b949e]">Create a quick active-recall prompt.</p>
+              </div>
+              <button type="button" onClick={() => setIsBuilderOpen(false)} className="text-[#8b949e] hover:text-white" title="Close">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <input required value={manualTopic} onChange={(event) => setManualTopic(event.target.value)} placeholder="Topic, e.g. Operating Systems" className="w-full rounded-xl border border-[#21262d] bg-[#0d1117] px-3 py-2.5 text-xs text-white outline-none focus:border-[#ff3344]" />
+            <textarea required value={manualQuestion} onChange={(event) => setManualQuestion(event.target.value)} placeholder="Question" rows={3} className="w-full resize-none rounded-xl border border-[#21262d] bg-[#0d1117] px-3 py-2.5 text-xs text-white outline-none focus:border-[#ff3344]" />
+            <textarea required value={manualAnswer} onChange={(event) => setManualAnswer(event.target.value)} placeholder="Answer or explanation" rows={4} className="w-full resize-none rounded-xl border border-[#21262d] bg-[#0d1117] px-3 py-2.5 text-xs text-white outline-none focus:border-[#ff3344]" />
+            <div className="flex justify-end gap-2 border-t border-[#21262d] pt-3">
+              <button type="button" onClick={() => setIsBuilderOpen(false)} className="rounded-xl border border-[#21262d] bg-[#161b22] px-4 py-2 text-xs font-mono-code text-[#8b949e]">Cancel</button>
+              <button type="submit" className="rounded-xl bg-[#ff3344] px-4 py-2 text-xs font-mono-code font-bold uppercase text-white">Add to Deck</button>
+            </div>
+          </form>
         </div>
       )}
     </div>

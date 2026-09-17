@@ -33,6 +33,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const handleQuickDeploy = (preset: OperatorProfile) => {
+    localStorage.removeItem('studynet_guest_mode');
     setIsVerifying(true);
     setStatusMessage(`Verifying biometric hash for ${preset.name}...`);
     setTimeout(() => {
@@ -56,6 +57,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         setIsVerifying(false);
 
         if (authMode === 'LOGIN') {
+          localStorage.removeItem('studynet_guest_mode');
           // Check if matches a preset or default
           const matchingPreset = PRESET_OPERATORS.find(
             (p) =>
@@ -143,7 +145,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             onClick={() => onNavigate('HOME')}
             className="text-xs font-mono-code text-[#ff3344] hover:underline inline-flex items-center gap-1 font-bold"
           >
-            <span>Resume HUD Session</span>
+            <span>Return to dashboard</span>
             <span className="material-symbols-outlined text-sm">arrow_forward</span>
           </button>
         </div>
@@ -171,7 +173,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold font-heading text-white tracking-tight">
-              {authMode === 'LOGIN' ? 'OPERATOR AUTHENTICATION' : 'CADET INITIALIZATION'}
+              {authMode === 'LOGIN' ? 'SIGN IN' : 'CREATE PROFILE'}
             </h1>
             <p className="text-xs font-mono-code text-[#8b949e]">
               Encrypted Academic Performance Terminal • v4.2.0
@@ -250,7 +252,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 : 'text-[#8b949e] hover:text-white'
             }`}
           >
-            Authenticate Operator
+            Sign In
           </button>
           <button
             type="button"
@@ -261,7 +263,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 : 'text-[#8b949e] hover:text-white'
             }`}
           >
-            Enroll New Cadet
+            Create Profile
           </button>
         </div>
 
@@ -449,12 +451,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <button
             type="button"
             onClick={() => {
-              onLoginSuccess(PRESET_OPERATORS[0], 'POPULATED');
+              localStorage.setItem('studynet_guest_mode', 'true');
+              onLoginSuccess(PRESET_OPERATORS[0]);
               onNavigate('HOME');
             }}
             className="hover:text-white transition-colors underline"
           >
-            Bypass &amp; Continue as Maya Lin (Guest)
+            Continue as guest (data stays on this device)
           </button>
 
           <span className="text-[10px] text-[#5c6370]">

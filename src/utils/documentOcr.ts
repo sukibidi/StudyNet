@@ -1,5 +1,6 @@
 import { createWorker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+import JSZip from 'jszip';
 
 const MAX_PDF_PAGES = 3;
 
@@ -36,6 +37,22 @@ async function recognizePdf(file: File): Promise<string> {
   return pageTexts.join('\n');
 }
 
+async function extractOfficeText(file: File): Promise<string> {
+  const zip = await JSZip.loadAsync(file);
+  const xmlFiles = Object.keys(zip.files).filter((fileName) => {
+    return fileName === 'word/document.xml' || fileName === 'xl/sharedStrings.xml' || /^ppt\/slides\/slide\d+\.xml$/.test(fileName);
+  });
+  const textParts: string[] = [];
+
+  for (const fileName of xmlFiles) {
+    const xml = await zip.files[fileName].async('text');
+    const parsed = new DOMParser().parseFromString(xml, 'application/xml');
+    textParts.push(parsed.documentElement.textContent || '');
+  }
+
+  return textParts.join('\n');
+}
+
 export async function extractDocumentText(file: File): Promise<string> {
   if (file.type === 'text/plain' || file.type === 'text/csv' || /\.(txt|csv)$/i.test(file.name)) {
     return file.text();
@@ -45,9 +62,13 @@ export async function extractDocumentText(file: File): Promise<string> {
     return recognizePdf(file);
   }
 
+  if (/\.(docx|pptx)$/i.test(file.name)) {
+    return extractOfficeText(file);
+  }
+
   if (file.type.startsWith('image/')) {
     return recognizeImage(file);
   }
 
-  throw new Error('OCR supports PDF, image, TXT, and CSV files.');
+  throw new Error('Upload a PDF, DOCX, PPTX, image, TXT, or CSV file.');
 }

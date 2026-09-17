@@ -6,6 +6,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 let aiClient: GoogleGenAI | null = null;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+
 function getGenAI(): GoogleGenAI | null {
   if (!aiClient && process.env.GEMINI_API_KEY) {
     aiClient = new GoogleGenAI({
@@ -39,7 +41,7 @@ export function createApp() {
     if (ai) {
       try {
         const response = await ai.models.generateContent({
-          model: "gemini-3.8-flash",
+          model: GEMINI_MODEL,
           contents: prompt,
           config: {
             systemInstruction: `You are AI-NET, the grounded tactical intelligence engine for university CS operators within the StudyNet Tactical HUD system.
@@ -110,7 +112,7 @@ Provide an assessment formatted as JSON with the following structure:
 Return only valid JSON.`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3.8-flash",
+          model: GEMINI_MODEL,
           contents: prompt,
           config: {
             responseMimeType: "application/json",
@@ -209,7 +211,7 @@ Return a JSON object strictly matching this schema:
 Return only valid JSON.`;
 
         const response = await ai.models.generateContent({
-          model: "gemini-3.8-flash",
+          model: GEMINI_MODEL,
           contents: prompt,
           config: {
             responseMimeType: "application/json",

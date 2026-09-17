@@ -12,11 +12,11 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({ currentScreen, o
   }
 
   const navItems: { id: ScreenType; label: string; icon: string }[] = [
-    { id: 'HOME', label: 'HOME', icon: 'grid_view' },
-    { id: 'SCHED', label: 'SCHED', icon: 'calendar_today' },
-    { id: 'AI-NET', label: 'AI-NET', icon: 'psychology' },
-    { id: 'DECKS', label: 'DECKS', icon: 'style' },
-    { id: 'STATS', label: 'STATS', icon: 'analytics' },
+    { id: 'HOME', label: 'Overview', icon: 'grid_view' },
+    { id: 'SCHED', label: 'Schedule', icon: 'calendar_today' },
+    { id: 'AI-NET', label: 'AI Study', icon: 'psychology' },
+    { id: 'DECKS', label: 'Flashcards', icon: 'style' },
+    { id: 'STATS', label: 'Progress', icon: 'analytics' },
   ];
 
   return (

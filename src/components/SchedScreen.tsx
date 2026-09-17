@@ -50,10 +50,16 @@ export const SchedScreen: React.FC<SchedScreenProps> = ({
   }, [externalScheduleDays]);
 
   const [isLocalTimetableModalOpen, setIsLocalTimetableModalOpen] = useState(false);
-  const [selectedDayNumber, setSelectedDayNumber] = useState(23);
+  const [selectedDayNumber, setSelectedDayNumber] = useState<number | null>(null);
   const [scheduleToast, setScheduleToast] = useState<string | null>(null);
 
   const activeScheduleDays = externalScheduleDays || internalScheduleDays;
+
+  useEffect(() => {
+    if (selectedDayNumber === null && activeScheduleDays.length > 0) {
+      setSelectedDayNumber(activeScheduleDays.find((day) => day.isToday)?.dateNumber || activeScheduleDays[0].dateNumber);
+    }
+  }, [activeScheduleDays, selectedDayNumber]);
 
   const triggerToast = (msg: string) => {
     setScheduleToast(msg);
@@ -98,8 +104,18 @@ export const SchedScreen: React.FC<SchedScreenProps> = ({
 
   const currentDay =
     activeScheduleDays.find((d) => d.dateNumber === selectedDayNumber) ||
-    activeScheduleDays[2] ||
-    activeScheduleDays[0];
+    activeScheduleDays.find((day) => day.isToday) ||
+    activeScheduleDays[0] ||
+    {
+      dayName: 'Schedule',
+      dateNumber: 0,
+      totalHours: 0,
+      completedHours: 0,
+      lecturesCount: 0,
+      labsCount: 0,
+      transitMins: 0,
+      items: [],
+    };
 
   const totalHours = isZeroData ? 0 : currentDay.totalHours;
   const completedHours = isZeroData ? 0 : currentDay.completedHours;
@@ -162,7 +178,7 @@ export const SchedScreen: React.FC<SchedScreenProps> = ({
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[#ff3344] text-base">bar_chart</span>
             <span className="text-xs font-mono-code font-bold uppercase tracking-wider text-white">
-              Workload Overview
+              Today’s workload
             </span>
           </div>
 
@@ -177,7 +193,7 @@ export const SchedScreen: React.FC<SchedScreenProps> = ({
               className="py-1 px-2.5 bg-[#ff3344] hover:bg-[#e62637] text-white rounded-lg font-mono-code text-[11px] font-bold uppercase tracking-wider transition-all shadow-[0_0_8px_rgba(255,51,68,0.3)] flex items-center gap-1 active:scale-95"
             >
               <span className="material-symbols-outlined text-xs">add</span>
-              <span>+ Input Timetable</span>
+              <span>Add session</span>
             </button>
           </div>
         </div>
@@ -233,13 +249,13 @@ export const SchedScreen: React.FC<SchedScreenProps> = ({
           </span>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono-code text-[#8b949e] uppercase tracking-wider">
-              {isZeroData ? '0 Sessions Active' : `${currentDay.items.length} Sessions Active`}
+              {isZeroData ? '0 sessions' : `${currentDay.items.length} sessions`}
             </span>
             <button
               onClick={handleOpenModal}
               className="text-[10px] font-mono-code font-bold text-[#ff3344] hover:text-[#ff5c6c] uppercase transition-colors"
             >
-              + Add Class
+              Add session
             </button>
           </div>
         </div>
@@ -251,10 +267,10 @@ export const SchedScreen: React.FC<SchedScreenProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold font-heading text-white">
-                NO SESSIONS SCHEDULED FOR THIS CYCLE
+                No sessions scheduled
               </h3>
               <p className="text-xs text-[#8b949e] mt-1 max-w-sm mx-auto leading-relaxed">
-                Your timetable for this day is clear. You can add custom classes, lectures, labs, or study sessions with the input timetable popup.
+                Add a class, lab, study block, or exam to build your schedule.
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
@@ -263,14 +279,14 @@ export const SchedScreen: React.FC<SchedScreenProps> = ({
                 className="py-2 px-3 bg-[#ff3344] hover:bg-[#e62637] text-white rounded-xl font-mono-code text-xs font-bold uppercase transition-all inline-flex items-center gap-1.5 shadow-[0_0_10px_rgba(255,51,68,0.3)]"
               >
                 <span className="material-symbols-outlined text-sm">calendar_add_on</span>
-                <span>+ Input Timetable Schedule</span>
+                <span>Add first session</span>
               </button>
               <button
                 onClick={() => triggerToast('LMS sync connected')}
                 className="py-2 px-3 bg-[#161b22] hover:bg-[#1f2530] text-white rounded-xl border border-[#30363d] hover:border-[#ff3344] font-mono-code text-xs font-semibold uppercase transition-all inline-flex items-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-sm text-[#ff3344]">sync</span>
-                <span>Sync iCal / LMS</span>
+                <span>Import calendar</span>
               </button>
             </div>
           </div>

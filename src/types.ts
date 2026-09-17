@@ -161,6 +161,7 @@ export interface ChatMessage {
   };
   sequence?: string[];
   examTip?: string;
+  source?: 'gemini' | 'cached-index' | 'fallback';
 }
 
 export type GradeLetter = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+' | 'C' | 'D' | 'F';

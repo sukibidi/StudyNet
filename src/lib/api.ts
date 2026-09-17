@@ -1,6 +1,15 @@
 import { supabase, SupabaseProfile, SupabaseSubject, SupabaseAlert, SupabaseScheduleDay, SupabaseScheduleItem, SupabaseFlashcard, SupabaseDrillQuestion, SupabaseCgpaHistory, SupabaseRadarAttribute } from './supabase';
 
 const PROFILE_ID_KEY = 'studynet_profile_id';
+const GUEST_MODE_KEY = 'studynet_guest_mode';
+
+export function isGuestMode(): boolean {
+  try {
+    return localStorage.getItem(GUEST_MODE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
 
 export function getCurrentProfileId(): string | null {
   try {

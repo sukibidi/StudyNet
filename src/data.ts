@@ -1,5 +1,5 @@
 import { DaySchedule, DrillQuestion, Flashcard, OperatorProfile } from './types';
-import { fetchScheduleDays, fetchScheduleItems, saveScheduleDay, saveScheduleItem, fetchFlashcards, saveFlashcard, fetchDrillQuestions, saveDrillQuestion, ensureProfileId } from './lib/api';
+import { fetchScheduleDays, fetchScheduleItems, saveScheduleDay, saveScheduleItem, fetchFlashcards, saveFlashcard, fetchDrillQuestions, saveDrillQuestion, ensureProfileId, isGuestMode } from './lib/api';
 
 export const DEFAULT_AVATARS = [
   {
@@ -193,6 +193,10 @@ export async function saveScheduleDayWithItems(day: DaySchedule): Promise<void> 
 }
 
 export async function loadFlashcardsFromSupabase(): Promise<Flashcard[]> {
+  if (isGuestMode()) {
+    const saved = localStorage.getItem('studynet_flashcards');
+    return saved ? JSON.parse(saved) as Flashcard[] : [];
+  }
   const profileId = await ensureProfileId();
   const cards = await fetchFlashcards(profileId);
   return cards.map((card) => ({
@@ -211,6 +215,11 @@ export async function loadFlashcardsFromSupabase(): Promise<Flashcard[]> {
 }
 
 export async function saveFlashcardToSupabase(card: Flashcard): Promise<Flashcard> {
+  if (isGuestMode()) {
+    const saved = JSON.parse(localStorage.getItem('studynet_flashcards') || '[]') as Flashcard[];
+    localStorage.setItem('studynet_flashcards', JSON.stringify([card, ...saved.filter((savedCard) => savedCard.id !== card.id)]));
+    return card;
+  }
   const profileId = await ensureProfileId();
   const saved = await saveFlashcard(profileId, {
     id: card.id,

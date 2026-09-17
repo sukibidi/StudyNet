@@ -1,5 +1,5 @@
 import { SubjectTaken, GradeLetter, ExpertiseAnalysisSummary } from './types';
-import { fetchSubjects, saveSubject } from './lib/api';
+import { fetchSubjects, saveSubject, isGuestMode } from './lib/api';
 
 export const GRADE_PROFICIENCY_MAP: Record<GradeLetter, number> = {
   'A+': 98,
@@ -28,6 +28,10 @@ export const GRADE_MEMORY_RETENTION_MAP: Record<GradeLetter, number> = {
 };
 
 export async function loadSubjectsFromSupabase(): Promise<SubjectTaken[]> {
+  if (isGuestMode()) {
+    const saved = localStorage.getItem('studynet_subjects_taken');
+    return saved ? JSON.parse(saved) as SubjectTaken[] : [];
+  }
   const profileId = (await import('./lib/api')).ensureProfileId();
   const subjects = await fetchSubjects(await profileId);
   return subjects.map((s) => ({
@@ -47,6 +51,11 @@ export async function loadSubjectsFromSupabase(): Promise<SubjectTaken[]> {
 }
 
 export async function saveSubjectToSupabase(subject: SubjectTaken): Promise<SubjectTaken> {
+  if (isGuestMode()) {
+    const saved = JSON.parse(localStorage.getItem('studynet_subjects_taken') || '[]') as SubjectTaken[];
+    localStorage.setItem('studynet_subjects_taken', JSON.stringify([subject, ...saved.filter((savedSubject) => savedSubject.id !== subject.id)]));
+    return subject;
+  }
   const profileId = await (await import('./lib/api')).ensureProfileId();
   const saved = await saveSubject(await profileId, {
     id: subject.id,

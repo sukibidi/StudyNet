@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { ChatMessage, ScreenType, SubjectTaken } from '../types';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { ChatMessage, Flashcard, ScreenType, SubjectTaken } from '../types';
 import { deriveAreaOfExpertise } from '../expertiseData';
 import { MemoryExpertiseGraph } from './MemoryExpertiseGraph';
 import { SubjectSlideVault } from './SubjectSlideVault';
 import { SubjectGradeModal } from './SubjectGradeModal';
 import { playTacticalChirp } from '../utils/audio';
 import { loadSubjectsFromSupabase, saveSubjectToSupabase } from '../expertiseData';
+import { saveFlashcardToSupabase } from '../data';
 
 interface AiNetScreenProps {
   onNavigate: (screen: ScreenType) => void;
@@ -18,7 +21,7 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
   onStartDrill,
   isZeroData = false,
 }) => {
-  // Sub-Navigation: Subject Slide Vault vs Memory Radar vs Neural Copilot
+  // AI Study workspace: subject documents, progress analysis, and AI chat.
   const [activeTab, setActiveTab] = useState<'VAULT' | 'RADAR' | 'CHAT'>('VAULT');
 
   // Subjects & Grades State
@@ -136,7 +139,7 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
   const handleRunAiAnalysis = async () => {
     setIsAnalyzing(true);
     playTacticalChirp(660, 0.08);
-    showToast('AI analyzing subjects & calibrating area of expertise...');
+    showToast('Analyzing subjects and updating progress...');
 
     try {
       const res = await fetch('/api/analyze-expertise', {
@@ -208,6 +211,7 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
         sender: 'ai-net',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         text: data.reply || 'Analysis completed with verified memory telemetry.',
+        source: data.source || 'fallback',
         messageReferences: isZeroData ? 'General Telemetry Grounding' : 'Page 22 & 27 • Grounded Excerpt',
         breakdown: data.breakdown || {
           outerBits: '10 bits',
@@ -242,6 +246,48 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
     }
   };
 
+  const handleGenerateFlashcard = async (message: ChatMessage, messageIndex: number) => {
+    const previousUserMessage = [...activeMessages.slice(0, messageIndex)]
+      .reverse()
+      .find((candidate) => candidate.sender === 'user');
+    const question = previousUserMessage?.text || 'Explain the key concept from this response.';
+    const topic = question.length > 70 ? `${question.slice(0, 67)}...` : question;
+    const card: Flashcard = {
+      id: crypto.randomUUID(),
+      course: 'AI-NET',
+      cardNumber: 1,
+      totalCards: 1,
+      topic,
+      category: 'AI-NET GENERATED',
+      question,
+      keyAspect: message.examTip || 'Recall the definition, process, and practical exam distinction.',
+      comparison: {
+        leftTitle: 'QUESTION',
+        leftValue: 'Active recall',
+        leftSub: 'Answer before revealing the explanation.',
+        rightTitle: 'SOURCE',
+        rightValue: 'AI-NET',
+        rightSub: 'Generated from your latest question.',
+      },
+      explanation: message.text,
+      retentionStability: 65,
+    };
+
+    try {
+      await saveFlashcardToSupabase(card);
+    } catch (error) {
+      console.warn('Flashcard persistence fallback:', error);
+      try {
+        const savedCards = JSON.parse(localStorage.getItem('studynet_flashcards') || '[]') as Flashcard[];
+        localStorage.setItem('studynet_flashcards', JSON.stringify([card, ...savedCards]));
+      } catch (storageError) {
+        console.warn('Flashcard local fallback unavailable:', storageError);
+      }
+    }
+    showToast('Flashcard generated and added to your deck.');
+    setTimeout(() => onNavigate('DECKS'), 450);
+  };
+
   return (
     <div className="w-full max-w-xl mx-auto px-3 sm:px-4 pt-[72px] pb-28 space-y-5 sm:space-y-6 flex flex-col items-stretch">
       {/* 0. UNIFIED SCREEN HEADER & SUB-NAVIGATION */}
@@ -253,7 +299,7 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
             </div>
             <div className="min-w-0">
               <h1 className="text-sm sm:text-base font-bold font-heading text-white tracking-tight truncate">
-                AI-NET: COGNITIVE INTELLIGENCE
+                AI STUDY: LEARNING ASSISTANT
               </h1>
               <div className="flex items-center gap-2 text-[10px] sm:text-[11px] font-mono-code text-[#8b949e] mt-0.5">
                 <span className="text-[#00e599] flex items-center gap-1">
@@ -275,42 +321,43 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
         </div>
 
         {/* 3-Tab Segmented Control (Vault, Radar, Copilot) */}
-        <div className="grid grid-cols-3 p-1 bg-[#161b22] rounded-xl border border-[#21262d] gap-1 select-none font-mono-code">
+        <div className="grid grid-cols-3 gap-1 rounded-xl border border-[#21262d] bg-[#161b22] p-1 select-none font-mono-code">
           <button
             onClick={() => setActiveTab('VAULT')}
-            className={`py-2 px-2 sm:px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            className={`min-w-0 rounded-lg px-2 py-2 text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'VAULT'
                 ? 'bg-[#ff3344] text-white shadow-[0_0_12px_rgba(255,51,68,0.3)]'
                 : 'text-[#8b949e] hover:text-white hover:bg-[#1f2530]'
             }`}
           >
             <span className="material-symbols-outlined text-sm">view_carousel</span>
-            <span className="truncate">Slide Vault</span>
+            <span className="truncate">Subject Files</span>
           </button>
 
           <button
             onClick={() => setActiveTab('RADAR')}
-            className={`py-2 px-2 sm:px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            className={`min-w-0 rounded-lg px-2 py-2 text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'RADAR'
                 ? 'bg-[#ff3344] text-white shadow-[0_0_12px_rgba(255,51,68,0.3)]'
                 : 'text-[#8b949e] hover:text-white hover:bg-[#1f2530]'
             }`}
           >
             <span className="material-symbols-outlined text-sm">radar</span>
-            <span className="truncate">Memory Radar</span>
+            <span className="truncate">Progress Analysis</span>
           </button>
 
           <button
             onClick={() => setActiveTab('CHAT')}
-            className={`py-2 px-2 sm:px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            className={`min-w-0 rounded-lg px-2 py-2 text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'CHAT'
                 ? 'bg-[#ff3344] text-white shadow-[0_0_12px_rgba(255,51,68,0.3)]'
                 : 'text-[#8b949e] hover:text-white hover:bg-[#1f2530]'
             }`}
           >
             <span className="material-symbols-outlined text-sm">chat</span>
-            <span className="truncate">Neural Copilot</span>
+            <span className="truncate">AI Chat</span>
           </button>
+
         </div>
       </div>
 
@@ -480,7 +527,7 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
                 </div>
               </div>
             ) : (
-              activeMessages.map((msg) => {
+              activeMessages.map((msg, messageIndex) => {
                 if (msg.sender === 'user') {
                   return (
                     <div key={msg.id} className="flex flex-col items-end gap-1 pl-6 sm:pl-8">
@@ -509,6 +556,11 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
                         <span className="text-xs font-mono-code font-bold uppercase tracking-wider text-white">
                           AI-NET Response
                         </span>
+                        {msg.source === 'cached-index' && (
+                          <span className="rounded border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-1.5 py-0.5 text-[9px] font-mono-code uppercase text-[#fbbf24]">
+                            Offline answer
+                          </span>
+                        )}
                       </div>
 
                       {msg.messageReferences && (
@@ -523,8 +575,8 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
                     </div>
 
                     {/* Body Text */}
-                    <div className="text-xs sm:text-sm text-[#e6edf3] leading-relaxed space-y-2 whitespace-pre-line font-sans">
-                      {msg.text}
+                    <div className="ai-markdown text-xs sm:text-sm text-[#e6edf3] leading-relaxed font-sans">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                     </div>
 
                     {/* 32-Bit Virtual Address Split Visualizer */}
@@ -607,13 +659,12 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-[#21262d]">
                       <button
                         onClick={() => {
-                          showToast('4 Flashcards Generated & Added to Deck!');
-                          setTimeout(() => onNavigate('DECKS'), 1200);
+                          void handleGenerateFlashcard(msg, messageIndex);
                         }}
                         className="bg-[#ff3344] hover:bg-[#e62637] text-white py-2.5 px-3 rounded-xl font-mono-code text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 glow-crimson active:scale-[0.98]"
                       >
                         <span className="material-symbols-outlined text-sm">style</span>
-                        <span>+ Create 4 Flashcards</span>
+                        <span>Generate Flashcard</span>
                       </button>
 
                       <button
@@ -632,7 +683,7 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
             {isLoading && (
               <div className="bg-[#10141a] rounded-2xl p-4 border border-[#21262d] flex items-center gap-3 text-xs font-mono-code text-[#ff3344] animate-pulse">
                 <span className="material-symbols-outlined text-base">sync</span>
-                <span>AI-NET querying indexed knowledge vectors...</span>
+                <span>{isAnalyzing ? 'Analyzing subject progress...' : 'Generating response...'}</span>
               </div>
             )}
           </div>
@@ -679,6 +730,7 @@ export const AiNetScreen: React.FC<AiNetScreenProps> = ({
           </div>
         </div>
       )}
+
 
       {/* MODAL: Input Subject & Grade */}
       <SubjectGradeModal

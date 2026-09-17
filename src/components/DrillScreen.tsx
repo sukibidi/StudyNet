@@ -63,7 +63,7 @@ export const DrillScreen: React.FC<DrillScreenProps> = ({ onNavigate, onFinish, 
       setCurrentQuestionIndex((prev) => prev + 1);
       setSelectedOptionId(questions[currentQuestionIndex + 1].options[0].id);
     } else {
-      setCompletedNotification(`Protocol Completed! +120 XP added to ${operatorName || 'Operator'} profile.`);
+      setCompletedNotification(`Practice complete. +120 XP added to ${operatorName || 'your'} profile.`);
       setTimeout(() => {
         if (onFinish) onFinish(120);
         onNavigate('STATS');
