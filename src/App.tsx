@@ -19,11 +19,11 @@ import { initAudioSettings, playTacticalChirp } from './utils/audio';
 import { TimetableInputModal } from './components/TimetableInputModal';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>('HOME');
-  const [operatorProfile, setOperatorProfile] = useState<OperatorProfile | null>(null);
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>('LOGIN');
+  const [operatorProfile, setOperatorProfile] = useState<OperatorProfile | null>(OPERATOR_PROFILE);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const syncTimerRef = useRef<number | null>(null);
 

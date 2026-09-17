@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { SubjectTaken, GradeLetter } from '../types';
 import {
   GRADE_PROFICIENCY_MAP,
@@ -50,6 +50,10 @@ export const SubjectGradeModal: React.FC<SubjectGradeModalProps> = ({
   const [credits, setCredits] = useState<number>(editingSubject ? editingSubject.credits || 3 : 3);
   const [customArea, setCustomArea] = useState(editingSubject ? editingSubject.areaOfExpertise : '');
   const [notes, setNotes] = useState(editingSubject ? editingSubject.cognitiveNotes || '' : '');
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -62,6 +66,55 @@ export const SubjectGradeModal: React.FC<SubjectGradeModalProps> = ({
     setCode(preset.code);
     setGrade(preset.grade);
     setCustomArea(deriveAreaOfExpertise(preset.name, preset.grade));
+  };
+
+  const handleFile = async (file?: File) => {
+    if (!file) return;
+
+    const acceptedExtensions = ['.pdf', '.doc', '.docx', '.csv', '.txt', '.png', '.jpg', '.jpeg'];
+    const lowerName = file.name.toLowerCase();
+    if (!acceptedExtensions.some((extension) => lowerName.endsWith(extension))) {
+      setUploadMessage('Use a PDF, Word document, CSV, TXT, PNG, or JPG file.');
+      return;
+    }
+
+    setUploadedFileName(file.name);
+    setUploadMessage('Scanning document with OCR...');
+
+    let detectedText = file.name;
+    try {
+      const { extractDocumentText } = await import('../utils/documentOcr');
+      detectedText += ` ${await extractDocumentText(file)}`;
+    } catch (error) {
+      setUploadMessage(error instanceof Error ? error.message : 'Could not scan this document.');
+      return;
+    }
+
+    const detectedGrade = detectedText.match(/(?:^|[\s_\-])(A\+|A-|A|B\+|B-|B|C\+|C|D|F)(?=$|[\s_\-.,])/i)?.[1]?.toUpperCase() as GradeLetter | undefined;
+    if (detectedGrade && AVAILABLE_GRADES.includes(detectedGrade)) {
+      setGrade(detectedGrade);
+    }
+
+    if (!name.trim()) {
+      const detectedCode = file.name.match(/\b[A-Z]{2,5}\d{2,4}\b/i)?.[0]?.toUpperCase();
+      const detectedName = file.name
+        .replace(/\.[^.]+$/, '')
+        .replace(/\b[A-Z]{2,5}\d{2,4}\b/i, '')
+        .replace(/(?:^|[\s_\-])(A\+|A-|A|B\+|B-|B|C\+|C|D|F)(?=$|[\s_\-.,])/i, '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (detectedName) setName(detectedName);
+      if (detectedCode) setCode(detectedCode);
+    }
+
+    setUploadMessage('OCR complete. Review the detected details before saving.');
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingFile(false);
+    void handleFile(event.dataTransfer.files[0]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -152,6 +205,47 @@ export const SubjectGradeModal: React.FC<SubjectGradeModalProps> = ({
               </div>
             </div>
           )}
+
+          <div className="space-y-2">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') fileInputRef.current?.click();
+              }}
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setIsDraggingFile(true);
+              }}
+              onDragOver={(event) => event.preventDefault()}
+              onDragLeave={() => setIsDraggingFile(false)}
+              onDrop={handleDrop}
+              className={`cursor-pointer rounded-xl border border-dashed p-4 text-center transition-colors ${
+                isDraggingFile
+                  ? 'border-[#ff3344] bg-[#ff3344]/10'
+                  : 'border-[#30363d] bg-[#0d1117] hover:border-[#ff3344]/60 hover:bg-[#161b22]'
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.csv,.txt,.png,.jpg,.jpeg"
+                className="hidden"
+                onChange={(event) => void handleFile(event.target.files?.[0])}
+              />
+              <span className="material-symbols-outlined text-2xl text-[#ff3344]">upload_file</span>
+              <p className="mt-1 text-xs font-bold font-mono-code text-white">
+                {uploadedFileName || 'Drop grade sheet here or browse files'}
+              </p>
+              <p className="mt-1 text-[10px] font-mono-code text-[#8b949e]">
+                We will prefill the subject, course code, and grade when they are readable.
+              </p>
+            </div>
+            {uploadMessage && (
+              <p className="text-[10px] font-mono-code text-[#00e599]">{uploadMessage}</p>
+            )}
+          </div>
 
           {/* Subject Name and Code */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

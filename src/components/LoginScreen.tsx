@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { OperatorProfile, ScreenType } from '../types';
 import { PRESET_OPERATORS } from '../data';
+import bannerImage from '../../StudyNet Banner.png';
 
 interface LoginScreenProps {
   onLoginSuccess: (profile: OperatorProfile) => void;
@@ -104,7 +105,33 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto px-4 pt-[72px] pb-28 space-y-6 flex flex-col items-stretch">
+    <div className="relative w-full min-h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,51,68,0.12),transparent_32%),radial-gradient(circle_at_82%_76%,rgba(0,210,255,0.06),transparent_28%)]" />
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-5 px-4 pb-28 pt-6 sm:px-6 sm:pt-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(400px,0.82fr)] lg:gap-8 lg:px-8 lg:pt-14">
+        <section className="relative overflow-hidden rounded-2xl border border-white/[0.09] bg-[#0d1117] shadow-2xl shadow-black/30 lg:sticky lg:top-24">
+          <img
+            src={bannerImage}
+            alt="StudyNet tactical academic operating system"
+            className="h-auto min-h-[190px] w-full object-cover object-center sm:min-h-[260px] lg:min-h-[520px]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e14]/90 via-transparent to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between gap-4 p-4 sm:p-6">
+            <div>
+              <p className="font-mono-code text-[9px] font-bold uppercase tracking-[0.28em] text-[#ff3344] sm:text-[10px]">
+                Cognitive protocol online
+              </p>
+              <p className="mt-1 max-w-sm text-xs text-[#c9d1d9] sm:text-sm">
+                Enter the command layer for focused study, retention telemetry, and exam readiness.
+              </p>
+            </div>
+            <span className="hidden shrink-0 items-center gap-1.5 rounded-full border border-[#00e599]/30 bg-[#00e599]/10 px-2.5 py-1 font-mono-code text-[9px] font-bold uppercase tracking-wider text-[#00e599] sm:flex">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#00e599]" />
+              Node online
+            </span>
+          </div>
+        </section>
+
+        <div className="w-full space-y-6">
       {/* Return to HUD shortcut if already authenticated */}
       {isAlreadyAuthenticated && (
         <div className="flex items-center justify-between bg-[#10141a] p-3 rounded-xl border border-[#21262d]">
@@ -123,7 +150,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       )}
 
       {/* Main Terminal Box */}
-      <div className="bg-[#10141a] rounded-2xl p-5 sm:p-7 border border-[rgba(255,255,255,0.07)] space-y-5 shadow-2xl relative overflow-hidden">
+      <div className="relative space-y-5 overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.09)] bg-[#10141a]/95 p-5 shadow-2xl shadow-black/30 backdrop-blur sm:p-7">
+        <div className="mb-5 flex items-center justify-between border-b border-[#21262d] pb-4 lg:hidden">
+          <div>
+            <p className="font-mono-code text-[9px] font-bold uppercase tracking-[0.24em] text-[#ff3344]">StudyNet gateway</p>
+            <p className="mt-1 text-xs text-[#8b949e]">Authenticate to deploy your HUD</p>
+          </div>
+          <span className="font-mono-code text-[9px] uppercase tracking-wider text-[#00e599]">Online</span>
+        </div>
         {/* Corner Cyber Accent */}
         <div className="absolute top-0 right-0 w-24 h-24 bg-[#ff3344]/5 rounded-bl-full pointer-events-none"></div>
 
@@ -426,6 +460,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <span className="text-[10px] text-[#5c6370]">
             System Node: HK-47 // Asia-SE1
           </span>
+        </div>
+      </div>
         </div>
       </div>
     </div>

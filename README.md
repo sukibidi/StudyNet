@@ -66,3 +66,22 @@ All data lives in Supabase. The schema is defined in `supabase/schema.sql` and i
 - `npm run start` - Start production server
 - `npm run preview` - Preview production build
 - `npm run lint` - Run TypeScript type checking
+
+## Deploy to Netlify
+
+This project is configured for a full Netlify deployment. The Vite frontend is published from `dist`, and the Express API is exposed through the Netlify Function in `netlify/functions/api.ts`.
+
+1. Push the project to GitHub, GitLab, or Bitbucket.
+2. In Netlify, choose **Add new site** > **Import an existing project** and select the repository.
+3. Use these build settings:
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+4. Add these environment variables under **Project configuration** > **Environment variables**:
+   - `VITE_SUPABASE_URL` - Your Supabase project URL
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` - Your Supabase publishable key
+   - `GEMINI_API_KEY` - Your Gemini API key for AI-Net features
+5. Deploy the site.
+
+The Supabase schema must be applied from `supabase/schema.sql` before using persistent data. `GEMINI_API_KEY` is used only by the Netlify Function and must not be renamed with a `VITE_` prefix, because Vite exposes `VITE_` variables to the browser.
+
+After deployment, verify that the site loads directly on a nested route and that `/api/health` returns a JSON response. AI-Net features use the API routes `/api/chat`, `/api/analyze-expertise`, and `/api/analyze-vault-subject`.
