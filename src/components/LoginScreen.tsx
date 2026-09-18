@@ -107,22 +107,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         </section>
 
         <div className="w-full space-y-6">
-      {/* Return to HUD shortcut if already authenticated */}
-      {isAlreadyAuthenticated && (
-        <div className="flex items-center justify-between bg-[#10141a] p-3 rounded-xl border border-[#21262d]">
-          <div className="flex items-center gap-2 text-xs font-mono-code text-[#8b949e]">
-            <span className="w-2 h-2 rounded-full bg-[#00e599] animate-pulse"></span>
-            <span>Current Terminal: <strong className="text-white">{currentProfile.name}</strong></span>
-          </div>
-          <button
-            onClick={() => onNavigate('HOME')}
-            className="text-xs font-mono-code text-[#ff3344] hover:underline inline-flex items-center gap-1 font-bold"
-          >
-            <span>Return to dashboard</span>
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
-          </button>
-        </div>
-      )}
 
       {/* Main Terminal Box */}
       <div className="relative space-y-5 overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.09)] bg-[#10141a]/95 p-5 shadow-2xl shadow-black/30 backdrop-blur sm:p-7">
@@ -202,7 +186,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     required
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="e.g. AshFuryz@gmail.com or Maya Lin"
+                    placeholder="email address"
                     className="w-full h-11 bg-[#0d1117] text-xs font-mono-code text-white pl-9 pr-3 rounded-xl border border-[#21262d] focus:outline-none focus:border-[#ff3344] transition-colors"
                   />
                 </div>
@@ -267,7 +251,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     type="text"
                     value={regCallsign}
                     onChange={(e) => setRegCallsign(e.target.value)}
-                    placeholder="e.g. @alexchen_cs"
+                    placeholder="callsign"
                     className="w-full h-10 bg-[#0d1117] text-xs font-mono-code text-white px-3 rounded-xl border border-[#21262d] focus:outline-none focus:border-[#ff3344]"
                   />
                 </div>
@@ -303,14 +287,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 <label className="text-[11px] font-mono-code text-[#8b949e] uppercase tracking-wider block">
                   Access Email
                 </label>
-                <input
-                  type="email"
-                  required
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="e.g. operator@univ.edu"
-                  className="w-full h-10 bg-[#0d1117] text-xs font-mono-code text-white px-3 rounded-xl border border-[#21262d] focus:outline-none focus:border-[#ff3344]"
-                />
+<input
+                    type="email"
+                    required
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="email address"
+                    className="w-full h-10 bg-[#0d1117] text-xs font-mono-code text-white px-3 rounded-xl border border-[#21262d] focus:outline-none focus:border-[#ff3344]"
+                  />
               </div>
             </>
           )}
