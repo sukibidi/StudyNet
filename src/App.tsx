@@ -12,7 +12,7 @@ import { EditProfileModal } from './components/EditProfileModal';
 import { LoadingSkeleton } from './components/LoadingSkeleton';
 import { TacticalToastManager } from './components/TacticalToastManager';
 import { TacticalAlertCenterModal } from './components/TacticalAlertCenterModal';
-import { OPERATOR_PROFILE, isProfileZeroData, loadScheduleDaysFromSupabase, saveScheduleDayWithItems } from './data';
+import { isProfileZeroData, loadScheduleDaysFromSupabase, saveScheduleDayWithItems } from './data';
 import { isWithin24Hours, loadAlertsFromSupabase } from './alertsData';
 import { DaySchedule, OperatorProfile, ScheduleItem, ScreenType, TacticalAlert } from './types';
 import { initAudioSettings, playTacticalChirp } from './utils/audio';
@@ -20,7 +20,7 @@ import { TimetableInputModal } from './components/TimetableInputModal';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('LOGIN');
-  const [operatorProfile, setOperatorProfile] = useState<OperatorProfile | null>(OPERATOR_PROFILE);
+  const [operatorProfile, setOperatorProfile] = useState<OperatorProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -63,10 +63,42 @@ export default function App() {
           if (saved) {
             setOperatorProfile(JSON.parse(saved));
           } else {
-            setOperatorProfile(OPERATOR_PROFILE);
+            setOperatorProfile({
+              name: 'Guest Operator',
+              email: 'guest@studynet.local',
+              handle: '@guest',
+              role: 'GUEST OPERATOR',
+              institution: 'Local Device',
+              level: 1,
+              xp: 0,
+              xpMax: 1000,
+              rank: 'Guest Session',
+              cgpa: 0.00,
+              targetCgpa: 4.00,
+              avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+              targetExam: 'Guest Session',
+              focusArea: 'Device-local data only',
+              isZeroData: true,
+            });
           }
         } catch (e2) {
-          setOperatorProfile(OPERATOR_PROFILE);
+          setOperatorProfile({
+            name: 'Guest Operator',
+            email: 'guest@studynet.local',
+            handle: '@guest',
+            role: 'GUEST OPERATOR',
+            institution: 'Local Device',
+            level: 1,
+            xp: 0,
+            xpMax: 1000,
+            rank: 'Guest Session',
+            cgpa: 0.00,
+            targetCgpa: 4.00,
+            avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            targetExam: 'Guest Session',
+            focusArea: 'Device-local data only',
+            isZeroData: true,
+          });
         }
       } finally {
         if (!cancelled) setIsLoadingProfile(false);

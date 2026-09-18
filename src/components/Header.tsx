@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { OperatorProfile, ScreenType } from '../types';
-import { PRESET_OPERATORS, isProfileZeroData } from '../data';
+import { isProfileZeroData } from '../data';
 
 interface HeaderProps {
   currentScreen: ScreenType;
@@ -254,65 +254,6 @@ export const Header: React.FC<HeaderProps> = ({
                       {operatorProfile?.email || operatorProfile?.role}
                     </span>
                   </div>
-                </div>
-
-                {/* Account Selection Roster */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between px-1 text-[10px] font-mono-code text-[#8b949e] uppercase tracking-wider font-semibold">
-                    <span>Select Account Mode</span>
-                    <span>1-Click Switch</span>
-                  </div>
-
-                  {PRESET_OPERATORS.map((preset) => {
-                    const isCurrent = operatorProfile?.email === preset.email;
-                    const presetIsZero = isProfileZeroData(preset);
-
-                    return (
-                      <button
-                        key={preset.email || preset.name}
-                        type="button"
-                        onClick={() => {
-                          if (onSwitchProfile) onSwitchProfile(preset);
-                          setIsAccountMenuOpen(false);
-                        }}
-                        className={`w-full p-2 rounded-xl flex items-center gap-2.5 transition-all text-left ${
-                          isCurrent
-                            ? 'bg-[#ff3344]/10 border border-[#ff3344]/40 text-white'
-                            : 'hover:bg-[#161b22] border border-transparent text-[#c9d1d9]'
-                        }`}
-                      >
-                        <img
-                          src={preset.avatarUrl}
-                          alt={preset.name}
-                          className="w-7 h-7 rounded-full object-cover border border-[#21262d] shrink-0"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-xs font-semibold text-white truncate">
-                              {preset.name}
-                            </span>
-                            <span
-                              className={`text-[9px] font-mono-code px-1.5 py-0.2 rounded ${
-                                presetIsZero
-                                  ? 'text-[#8b949e] bg-[#21262d]'
-                                  : 'text-[#00e599] bg-[#00e599]/10'
-                              }`}
-                            >
-                              {presetIsZero ? 'ZERO DATA' : 'DUMMY DATA'}
-                            </span>
-                          </div>
-                          <span className="text-[10px] font-mono-code text-[#8b949e] truncate block">
-                            LVL {preset.level} • {presetIsZero ? 'Standby Baseline' : `${preset.cgpa} CGPA`}
-                          </span>
-                        </div>
-                        {isCurrent && (
-                          <span className="material-symbols-outlined text-sm text-[#ff3344] shrink-0">
-                            check
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
                 </div>
 
                 {/* Quick Navigation Footer */}

@@ -1,103 +1,11 @@
 import { DaySchedule, DrillQuestion, Flashcard, OperatorProfile } from './types';
 import { fetchScheduleDays, fetchScheduleItems, saveScheduleDay, saveScheduleItem, fetchFlashcards, saveFlashcard, fetchDrillQuestions, saveDrillQuestion, ensureProfileId, isGuestMode } from './lib/api';
 
-export const DEFAULT_AVATARS = [
-  {
-    id: 'maya',
-    name: 'Maya Lin (Tactical Default)',
-    url: 'https://lh3.googleusercontent.com/aida/AEtjO1WsUeHjMDNWehAkSiExoKIBAqbn0WHSBb8bMlTg2WNrHu-HubAk-emKoCWEnM02iuJBPFpSSkcEuCqmPASrQ526qGrd_qThALUz3AJPoaWTK33a8jIJNxLivpibY6oeiRka-AskWLoxU3Vrr6kcILLgqtd6XBL60SwuY15gpJ6nww9y02JYYJCSsISYSGle33UF7hGFhWTBfGEcmC1daPaiMvWx1F5LTl9KgiKryIGxHNZMe-1CmqLqqzI',
-  },
-  {
-    id: 'ash',
-    name: 'Ash Fury (Cyber Architect)',
-    url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cadet',
-    name: 'Cadet Recruit (Zero Baseline)',
-    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'neural',
-    name: 'Neural Specialist',
-    url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'hacker',
-    name: 'Systems Hacker',
-    url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'synth',
-    name: 'Quantum Operator',
-    url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-  },
-];
-
-export const OPERATOR_PROFILE: OperatorProfile = {
-  name: 'Ash Fury',
-  email: 'AshFuryz@gmail.com',
-  handle: '@ashfuryz',
-  role: 'CYBER-SYSTEMS ARCHITECT',
-  institution: 'Advanced Systems Laboratory',
-  level: 5,
-  xp: 9420,
-  xpMax: 10000,
-  rank: 'Top 1% Elite Cohort',
-  cgpa: 3.92,
-  targetCgpa: 4.00,
-  avatarUrl: DEFAULT_AVATARS[1].url,
-  targetExam: 'Distributed Consensus & Kernel Internals',
-  focusArea: 'Concurrency & Virtual Memory Paging',
-  isZeroData: false,
-};
-
-export const PRESET_OPERATORS: OperatorProfile[] = [
-  OPERATOR_PROFILE,
-  {
-    name: 'Maya Lin',
-    email: 'maya.lin@univ.edu',
-    handle: '@mayalin_cs',
-    role: 'CS-CORE OPERATOR',
-    institution: 'Dept of Computer Science & Engineering',
-    level: 4,
-    xp: 8450,
-    xpMax: 10000,
-    rank: 'Top 4% CS Dept',
-    cgpa: 3.84,
-    targetCgpa: 3.90,
-    avatarUrl: DEFAULT_AVATARS[0].url,
-    targetExam: 'CS301 Midterm Exam',
-    focusArea: 'Dynamic Programming: Memoization Tables',
-    isZeroData: false,
-  },
-  {
-    name: 'Recruit Cadet',
-    email: 'cadet@univ.edu',
-    handle: '@cadet_01',
-    role: 'OPERATOR STANDBY',
-    institution: 'Division of Computing Fundamentals',
-    level: 1,
-    xp: 0,
-    xpMax: 1000,
-    rank: 'Unranked Cadet',
-    cgpa: 0.00,
-    targetCgpa: 3.80,
-    avatarUrl: DEFAULT_AVATARS[2].url,
-    targetExam: 'Initial Benchmark Diagnostic',
-    focusArea: 'Baseline Diagnostic Telemetry',
-    isZeroData: true,
-  },
-];
+export const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
 export const isProfileZeroData = (profile?: OperatorProfile | null): boolean => {
   if (!profile) return false;
-  if (typeof profile.isZeroData === 'boolean') return profile.isZeroData;
-  return (
-    profile.email === 'cadet@univ.edu' ||
-    profile.role === 'OPERATOR STANDBY' ||
-    profile.level === 1
-  );
+  return profile.isZeroData === true;
 };
 
 export async function loadScheduleDaysFromSupabase(): Promise<DaySchedule[]> {

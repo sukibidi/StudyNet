@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { OperatorProfile, ScreenType } from '../types';
-import { PRESET_OPERATORS } from '../data';
 import bannerImage from '../../StudyNet Banner.png';
 
 interface LoginScreenProps {
@@ -17,7 +16,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   isAlreadyAuthenticated = false,
 }) => {
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
-  const [identifier, setIdentifier] = useState('AshFuryz@gmail.com');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('••••••••••••');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -32,20 +31,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const handleQuickDeploy = (preset: OperatorProfile) => {
-    localStorage.removeItem('studynet_guest_mode');
-    setIsVerifying(true);
-    setStatusMessage(`Verifying biometric hash for ${preset.name}...`);
-    setTimeout(() => {
-      setStatusMessage('Access granted. Synchronizing cognitive telemetry...');
-      setTimeout(() => {
-        setIsVerifying(false);
-        onLoginSuccess(preset);
-        onNavigate('HOME');
-      }, 600);
-    }, 600);
-  };
-
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsVerifying(true);
@@ -58,27 +43,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
         if (authMode === 'LOGIN') {
           localStorage.removeItem('studynet_guest_mode');
-          // Check if matches a preset or default
-          const matchingPreset = PRESET_OPERATORS.find(
-            (p) =>
-              p.email?.toLowerCase() === identifier.toLowerCase() ||
-              p.handle?.toLowerCase() === identifier.toLowerCase() ||
-              p.name.toLowerCase() === identifier.toLowerCase()
-          );
-
-          if (matchingPreset) {
-            onLoginSuccess(matchingPreset);
-          } else {
-            // Log in with customized profile based on identifier
-            const customProfile: OperatorProfile = {
-              ...currentProfile,
-              name: identifier.includes('@') ? identifier.split('@')[0] : identifier,
-              email: identifier,
-              handle: `@${identifier.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`,
-              isZeroData: false,
-            };
-            onLoginSuccess(customProfile);
-          }
+          // Log in with customized profile based on identifier
+          const customProfile: OperatorProfile = {
+            ...currentProfile,
+            name: identifier.includes('@') ? identifier.split('@')[0] : identifier,
+            email: identifier,
+            handle: `@${identifier.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`,
+            isZeroData: false,
+          };
+          onLoginSuccess(customProfile);
         } else {
           // Register new operator (defaults to zero-data baseline for new account)
           const newProfile: OperatorProfile = {
@@ -93,7 +66,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             rank: 'Recruit Class 2026',
             cgpa: 3.80,
             targetCgpa: 4.00,
-            avatarUrl: PRESET_OPERATORS[2].avatarUrl,
+            avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
             targetExam: regTargetExam.trim() || 'Diagnostic Benchmark',
             focusArea: 'Core Systems & Data Structures',
             isZeroData: true,
@@ -182,62 +155,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
           <div className="px-2 py-1 rounded bg-[#161b22] border border-[#30363d] text-[10px] font-mono-code text-[#00e599] uppercase tracking-wider shrink-0">
             GATEWAY: ONLINE
-          </div>
-        </div>
-
-        {/* Quick Deploy Roster Selection */}
-        <div className="space-y-2.5">
-          <div className="flex items-center justify-between text-[11px] font-mono-code">
-            <span className="text-[#8b949e] uppercase tracking-wider font-bold">
-              Instant Deployment Roster
-            </span>
-            <span className="text-[#5c6370]">Click to Switch</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {PRESET_OPERATORS.map((preset) => {
-              const isSelected = currentProfile.name === preset.name;
-              return (
-                <button
-                  key={preset.name}
-                  type="button"
-                  disabled={isVerifying}
-                  onClick={() => handleQuickDeploy(preset)}
-                  className={`p-2.5 rounded-xl border flex flex-col items-start gap-1.5 transition-all text-left group ${
-                    isSelected
-                      ? 'bg-[#1c222b] border-[#ff3344] shadow-[0_0_12px_rgba(255,51,68,0.25)]'
-                      : 'bg-[#0d1117] border-[#21262d] hover:border-[#30363d] hover:bg-[#161b22]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    <img
-                      src={preset.avatarUrl}
-                      alt={preset.name}
-                      className="w-7 h-7 rounded-full object-cover border border-[#21262d] group-hover:border-[#ff3344] shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <span className="text-xs font-bold text-white block truncate">
-                        {preset.name}
-                      </span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span
-                          className={`text-[8px] font-mono-code font-bold px-1 py-0.2 rounded uppercase ${
-                            preset.isZeroData
-                              ? 'bg-[#21262d] text-[#8b949e]'
-                              : 'bg-[#00e599]/15 text-[#00e599] border border-[#00e599]/30'
-                          }`}
-                        >
-                          {preset.isZeroData ? 'Zero Data' : 'Dummy Data'}
-                        </span>
-                        <span className="text-[9px] font-mono-code text-[#8b949e] truncate">
-                          LVL {preset.level}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
           </div>
         </div>
 
@@ -452,7 +369,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             type="button"
             onClick={() => {
               localStorage.setItem('studynet_guest_mode', 'true');
-              onLoginSuccess(PRESET_OPERATORS[0]);
+              const guestProfile: OperatorProfile = {
+                name: 'Guest Operator',
+                email: 'guest@studynet.local',
+                handle: '@guest',
+                role: 'GUEST OPERATOR',
+                institution: 'Local Device',
+                level: 1,
+                xp: 0,
+                xpMax: 1000,
+                rank: 'Guest Session',
+                cgpa: 0.00,
+                targetCgpa: 4.00,
+                avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+                targetExam: 'Guest Session',
+                focusArea: 'Device-local data only',
+                isZeroData: true,
+              };
+              onLoginSuccess(guestProfile);
               onNavigate('HOME');
             }}
             className="hover:text-white transition-colors underline"

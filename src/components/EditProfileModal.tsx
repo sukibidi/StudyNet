@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { OperatorProfile } from '../types';
-import { DEFAULT_AVATARS } from '../data';
+import { DEFAULT_AVATAR } from '../data';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -19,10 +19,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
   const [formData, setFormData] = useState<OperatorProfile>({ ...profile });
   const [customAvatarUrl, setCustomAvatarUrl] = useState(
-    DEFAULT_AVATARS.some((a) => a.url === profile.avatarUrl) ? '' : profile.avatarUrl
+    profile.avatarUrl === DEFAULT_AVATAR ? '' : profile.avatarUrl
   );
   const [showCustomInput, setShowCustomInput] = useState(
-    !DEFAULT_AVATARS.some((a) => a.url === profile.avatarUrl)
+    profile.avatarUrl !== DEFAULT_AVATAR
   );
 
   const handleSelectAvatar = (url: string) => {
@@ -92,7 +92,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   alt={formData.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = DEFAULT_AVATARS[0].url;
+                    (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
                   }}
                 />
               </div>
@@ -115,29 +115,23 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             {/* Presets Grid */}
             {!showCustomInput ? (
               <div className="grid grid-cols-6 gap-2 pt-1">
-                {DEFAULT_AVATARS.map((avatar) => {
-                  const isSelected = formData.avatarUrl === avatar.url;
-                  return (
-                    <button
-                      key={avatar.id}
-                      type="button"
-                      onClick={() => handleSelectAvatar(avatar.url)}
-                      className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all group ${
-                        isSelected
-                          ? 'border-[#ff3344] scale-105 shadow-[0_0_10px_rgba(255,51,68,0.4)]'
-                          : 'border-[#21262d] opacity-70 hover:opacity-100 hover:border-[#8b949e]'
-                      }`}
-                      title={avatar.name}
-                    >
-                      <img src={avatar.url} alt={avatar.name} className="w-full h-full object-cover" />
-                      {isSelected && (
-                        <div className="absolute inset-0 bg-[#ff3344]/20 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-white text-xs font-bold">check</span>
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
+                <button
+                  type="button"
+                  onClick={() => handleSelectAvatar(DEFAULT_AVATAR)}
+                  className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all group ${
+                    formData.avatarUrl === DEFAULT_AVATAR
+                      ? 'border-[#ff3344] scale-105 shadow-[0_0_10px_rgba(255,51,68,0.4)]'
+                      : 'border-[#21262d] opacity-70 hover:opacity-100 hover:border-[#8b949e]'
+                  }`}
+                  title="Default Avatar"
+                >
+                  <img src={DEFAULT_AVATAR} alt="Default Avatar" className="w-full h-full object-cover" />
+                  {formData.avatarUrl === DEFAULT_AVATAR && (
+                    <div className="absolute inset-0 bg-[#ff3344]/20 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-white text-xs font-bold">check</span>
+                    </div>
+                  )}
+                </button>
               </div>
             ) : (
               <div className="space-y-1 pt-1">
